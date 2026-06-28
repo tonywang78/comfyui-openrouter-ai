@@ -325,7 +325,10 @@ public class RemoteRegistryStore {
 				String itemId = item.path("id").asText("");
 				if (id.equals(itemId)) {
 					String slug = item.path("model").asText("");
-					return (slug == null || slug.isBlank()) ? null : slug;
+					if (slug == null || slug.isBlank()) {
+						slug = itemId;
+					}
+					return slug;
 				}
 			}
 			return null;

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
@@ -34,9 +35,11 @@ public class RemoteRegistryClient {
         final int timeoutSec = cfg.getReadTimeoutSeconds() == null ? 10 : cfg.getReadTimeoutSeconds();
         try {
             log.info("请求远程注册数据，url={}, timeout={}s", cfg.getUrl(), timeoutSec);
-            String raw = webClient
-                    .get()
-                    .uri(cfg.getUrl())
+            WebClient.RequestHeadersSpec<?> request = webClient.get().uri(cfg.getUrl());
+            if (StringUtils.hasText(openRouterConfig.getApiKey())) {
+                request = request.header("Authorization", "Bearer " + openRouterConfig.getApiKey());
+            }
+            String raw = request
                     .retrieve()
                     .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(timeoutSec))
@@ -56,95 +59,21 @@ public class RemoteRegistryClient {
 
                 ArrayNode outData = objectMapper.createArrayNode();
 
-                if (dataNode.isArray()) {
-                    for (JsonNode item : dataNode) {
-                        JsonNode endpoint = item.get("endpoint");
-                        if (endpoint == null || endpoint.isNull()) {
-                            continue;
-                        }
-
-                        // 按配置过滤 FREE/PAID/ALL
-                        if (!acceptByFilter(endpoint)) {
-                            continue;
-                        }
-
-                        // 必要字段映射
-                        JsonNode idNode = endpoint.get("id");
-                        JsonNode modelNode = endpoint.get("model");
-                        if (idNode == null || idNode.isNull() || modelNode == null || modelNode.isNull()) {
-                            continue;
-                        }
-
-                        ObjectNode outItem = objectMapper.createObjectNode();
-                        outItem.put("id", idNode.asText());
-                        outItem.put("name", modelNode.path("name").asText(""));
-                        outItem.put("model", modelNode.path("slug").asText(""));
-                        // 新增：icon 来源 endpoint.provider_info.icon.url
-                        try {
-                            String iconUrl = endpoint.path("provider_info").path("icon").path("url").asText("");
-                            if (iconUrl != null && !iconUrl.isBlank()) {
-                                outItem.put("icon", iconUrl);
-                            }
-                        } catch (Exception ignore) {}
-
-                        JsonNode ctxLen = modelNode.get("context_length");
-                        int maxTokens = 0;
-                        if (ctxLen != null && !ctxLen.isNull()) {
-                            try {
-                                maxTokens = ctxLen.isNumber() ? ctxLen.asInt() : Integer.parseInt(ctxLen.asText("0"));
-                            } catch (Exception ignored) {
-                            }
-                        }
-                        // 过滤 context_length 为 0 的模型
-                        if (maxTokens <= 0) {
-                            continue;
-                        }
-                        outItem.put("maxTokens", maxTokens);
-
-                        // outputType 来源：output_modalities 数组
-                        ArrayNode outputTypeArr = objectMapper.createArrayNode();
-                        JsonNode outMods = modelNode.get("output_modalities");
-                        if (outMods != null && outMods.isArray()) {
-                            for (JsonNode mod : outMods) {
-                                outputTypeArr.add(mod.asText());
-                            }
-                        }
-                        outItem.set("outputType", outputTypeArr);
-
-                        // inputType 来源：input_modalities 数组
-                        ArrayNode inputTypeArr = objectMapper.createArrayNode();
-                        JsonNode inMods = modelNode.get("input_modalities");
-                        if (inMods != null && inMods.isArray()) {
-                            for (JsonNode mod : inMods) {
-                                inputTypeArr.add(mod.asText());
-                            }
-                        }
-                        outItem.set("inputType", inputTypeArr);
-
-   
-                        // supportReasoning 来源：endpoint 的 supports_reasoning 字段
-                        boolean supportReasoning = endpoint.path("supports_reasoning").asBoolean(false);
-                        outItem.put("supportReasoning", supportReasoning);
-
-                        // 添加付费模式字段
-                        JsonNode pricing = endpoint.get("pricing");
-                        String paymentMode = "FREE";
-                        if (pricing != null && pricing.isObject()) {
-                            double prompt = parsePrice(pricing.get("prompt"));
-                            double completion = parsePrice(pricing.get("completion"));
-                            if (prompt > 0.0 || completion > 0.0) {
-                                paymentMode = "PAID";
-                            }
-                        }
-                        outItem.put("paymentMode", paymentMode);
-
-                        outData.add(outItem);
-                    }
-                } else {
+                if (!dataNode.isArray()) {
                     log.warn("远程注册返回结构无 data 数组，使用空数组");
                     return "[]";
                 }
 
+                for (JsonNode item : dataNode) {
+                    ObjectNode outItem = item.has("endpoint") && !item.get("endpoint").isNull()
+                            ? mapLegacyEndpointItem(item.get("endpoint"))
+                            : mapV1ModelItem(item);
+                    if (outItem != null) {
+                        outData.add(outItem);
+                    }
+                }
+
+                log.info("远程注册数据解析完成，模型数量={}", outData.size());
                 return objectMapper.writeValueAsString(outData);
             } catch (Exception parseOrFilterEx) {
                 log.error("远程注册数据解析/过滤失败，使用空数组: {}", parseOrFilterEx.getMessage(), parseOrFilterEx);
@@ -156,32 +85,171 @@ public class RemoteRegistryClient {
         }
     }
 
-    private boolean acceptByFilter(JsonNode endpoint) {
+    /**
+     * 解析 OpenRouter /api/v1/models 返回的模型项
+     */
+    private ObjectNode mapV1ModelItem(JsonNode item) {
+        if (item == null || !item.isObject()) {
+            return null;
+        }
+
+        String slug = item.path("id").asText("");
+        if (!StringUtils.hasText(slug)) {
+            slug = item.path("canonical_slug").asText("");
+        }
+        if (!StringUtils.hasText(slug)) {
+            return null;
+        }
+
+        if (!acceptByFilter(item)) {
+            return null;
+        }
+
+        int maxTokens = item.path("context_length").asInt(0);
+        if (maxTokens <= 0) {
+            maxTokens = item.path("top_provider").path("context_length").asInt(0);
+        }
+        if (maxTokens <= 0) {
+            return null;
+        }
+
+        ObjectNode outItem = objectMapper.createObjectNode();
+        outItem.put("id", slug);
+        outItem.put("name", item.path("name").asText(slug));
+        outItem.put("model", slug);
+        outItem.put("maxTokens", maxTokens);
+        outItem.set("outputType", readModalities(item, "output_modalities"));
+        outItem.set("inputType", readModalities(item, "input_modalities"));
+        outItem.put("supportReasoning", supportsReasoning(item));
+        outItem.put("paymentMode", resolvePaymentMode(item.get("pricing")));
+        return outItem;
+    }
+
+    /**
+     * 兼容旧版 /api/frontend/models 的 endpoint 结构
+     */
+    private ObjectNode mapLegacyEndpointItem(JsonNode endpoint) {
+        if (endpoint == null || endpoint.isNull()) {
+            return null;
+        }
+        if (!acceptByFilter(endpoint)) {
+            return null;
+        }
+
+        JsonNode idNode = endpoint.get("id");
+        JsonNode modelNode = endpoint.get("model");
+        if (idNode == null || idNode.isNull() || modelNode == null || modelNode.isNull()) {
+            return null;
+        }
+
+        String slug = modelNode.path("slug").asText("");
+        if (!StringUtils.hasText(slug)) {
+            return null;
+        }
+
+        int maxTokens = 0;
+        JsonNode ctxLen = modelNode.get("context_length");
+        if (ctxLen != null && !ctxLen.isNull()) {
+            try {
+                maxTokens = ctxLen.isNumber() ? ctxLen.asInt() : Integer.parseInt(ctxLen.asText("0"));
+            } catch (Exception ignored) {
+            }
+        }
+        if (maxTokens <= 0) {
+            return null;
+        }
+
+        ObjectNode outItem = objectMapper.createObjectNode();
+        outItem.put("id", idNode.asText());
+        outItem.put("name", modelNode.path("name").asText(""));
+        outItem.put("model", slug);
+        try {
+            String iconUrl = endpoint.path("provider_info").path("icon").path("url").asText("");
+            if (StringUtils.hasText(iconUrl)) {
+                outItem.put("icon", iconUrl);
+            }
+        } catch (Exception ignore) {
+        }
+        outItem.put("maxTokens", maxTokens);
+        outItem.set("outputType", toArrayNode(modelNode.get("output_modalities")));
+        outItem.set("inputType", toArrayNode(modelNode.get("input_modalities")));
+        outItem.put("supportReasoning", endpoint.path("supports_reasoning").asBoolean(false));
+        outItem.put("paymentMode", resolvePaymentMode(endpoint.get("pricing")));
+        return outItem;
+    }
+
+    private ArrayNode readModalities(JsonNode item, String fieldName) {
+        JsonNode architecture = item.get("architecture");
+        if (architecture != null && architecture.has(fieldName)) {
+            return toArrayNode(architecture.get(fieldName));
+        }
+        return toArrayNode(item.get(fieldName));
+    }
+
+    private ArrayNode toArrayNode(JsonNode mods) {
+        ArrayNode arr = objectMapper.createArrayNode();
+        if (mods != null && mods.isArray()) {
+            for (JsonNode mod : mods) {
+                arr.add(mod.asText());
+            }
+        }
+        return arr;
+    }
+
+    private boolean supportsReasoning(JsonNode item) {
+        JsonNode params = item.get("supported_parameters");
+        if (params == null || !params.isArray()) {
+            return false;
+        }
+        for (JsonNode param : params) {
+            String value = param.asText("");
+            if ("reasoning".equalsIgnoreCase(value) || "include_reasoning".equalsIgnoreCase(value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String resolvePaymentMode(JsonNode pricing) {
+        if (pricing == null || !pricing.isObject()) {
+            return "FREE";
+        }
+        double prompt = parsePrice(pricing.get("prompt"));
+        double completion = parsePrice(pricing.get("completion"));
+        return (prompt > 0.0 || completion > 0.0) ? "PAID" : "FREE";
+    }
+
+    private boolean acceptByFilter(JsonNode item) {
         OpenRouterConfig.FilterMode mode = openRouterConfig.getRemoteRegistry().getFilter();
         if (mode == null || mode == OpenRouterConfig.FilterMode.ALL) {
             return true;
         }
-        JsonNode pricing = endpoint.get("pricing");
-        if (pricing == null || !pricing.isObject()) {
-            return mode == OpenRouterConfig.FilterMode.FREE;
+        String paymentMode = resolvePaymentMode(item.get("pricing"));
+        boolean isFree = "FREE".equals(paymentMode);
+        if (mode == OpenRouterConfig.FilterMode.FREE) {
+            return isFree;
         }
-        double prompt = parsePrice(pricing.get("prompt"));
-        double completion = parsePrice(pricing.get("completion"));
-        boolean isFree = prompt == 0.0 && completion == 0.0;
-        if (mode == OpenRouterConfig.FilterMode.FREE) return isFree;
-        if (mode == OpenRouterConfig.FilterMode.PAID) return !isFree;
+        if (mode == OpenRouterConfig.FilterMode.PAID) {
+            return !isFree;
+        }
         return true;
     }
 
     private double parsePrice(JsonNode node) {
-        if (node == null || node.isNull()) return 0.0;
+        if (node == null || node.isNull()) {
+            return 0.0;
+        }
         try {
-            if (node.isNumber()) return node.asDouble();
+            if (node.isNumber()) {
+                return node.asDouble();
+            }
             String s = node.asText();
-            if (s == null || s.isBlank()) return 0.0;
+            if (s == null || s.isBlank()) {
+                return 0.0;
+            }
             return Double.parseDouble(s);
         } catch (Exception ignore) {
             return 0.0;
         }
     }
-} 
+}
