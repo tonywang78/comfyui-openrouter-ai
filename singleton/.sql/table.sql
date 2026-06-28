@@ -81,9 +81,9 @@ create table ghosts.workflow
         primary key,
     workflow_category_id int                                not null,
     name                 varchar(100)                       null,
-    description          varchar(255)                       not null,
+    description          varchar(255)                       not null default '',
     json                 json                               not null,
-    url                  varchar(255)                       not null,
+    url                  varchar(255)                       not null default '',
     create_time          datetime default CURRENT_TIMESTAMP not null,
     update_time          datetime default CURRENT_TIMESTAMP not null,
     credits_deducted     int                                null
@@ -95,7 +95,7 @@ create table ghosts.workflow_category
     id          int auto_increment
         primary key,
     name        varchar(255) not null,
-    url         varchar(255) not null,
+    url         varchar(255) not null default '',
     create_time datetime     null,
     update_time datetime     null
 )

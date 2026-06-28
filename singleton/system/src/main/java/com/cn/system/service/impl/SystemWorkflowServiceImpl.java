@@ -409,7 +409,8 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
     @Transactional(rollbackFor = Exception.class)
     public Long createCategory(final CreateWorkflowCategoryDto dto) {
         WorkflowCategory entity = new WorkflowCategory()
-                .setName(dto.getName());
+                .setName(dto.getName())
+                .setUrl("");
         workflowCategoryMapper.insert(entity);
         return entity.getId();
     }

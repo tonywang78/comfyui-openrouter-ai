@@ -36,7 +36,7 @@ ali:
     access-key: "${ALI_ACCESS_KEY}"
     secret-key: "${ALI_SECRET_KEY}"
   oss:
-    endpoint: "oss-accelerate.aliyuncs.com"
+    endpoint: "${ALI_OSS_ENDPOINT:oss-cn-beijing.aliyuncs.com}"
     bucket-name: "${ALI_OSS_BUCKET}"
     domain: "${ALI_OSS_DOMAIN}"
     # 支持的文件类型 全局

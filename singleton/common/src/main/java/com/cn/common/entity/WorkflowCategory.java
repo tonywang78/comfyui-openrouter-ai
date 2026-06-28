@@ -20,6 +20,8 @@ public class WorkflowCategory {
 
     private String name;
 
+    /** 类别封面图 URL（可选，暂无管理界面时默认空串） */
+    private String url;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
