@@ -53,6 +53,9 @@ public class AliConfiguration {
 
         private String domain;
 
+        /** 签名 URL 有效期（秒），默认 1 小时 */
+        private Long signedUrlExpireSeconds = 3600L;
+
         private List<SupportedFileType> supportedFileTypes;
     }
 

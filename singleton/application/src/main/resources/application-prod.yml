@@ -39,6 +39,7 @@ ali:
     endpoint: "${ALI_OSS_ENDPOINT:oss-cn-beijing.aliyuncs.com}"
     bucket-name: "${ALI_OSS_BUCKET}"
     domain: "${ALI_OSS_DOMAIN}"
+    signed-url-expire-seconds: ${ALI_OSS_SIGNED_URL_EXPIRE_SECONDS:3600}
     # 支持的文件类型 全局
     supported-file-types:
       - extension: "jpg"

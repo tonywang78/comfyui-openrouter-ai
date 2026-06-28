@@ -11,6 +11,7 @@ import com.cn.comfyui.vo.WorkflowResultVo;
 import com.cn.common.base.BasePage;
 import com.cn.common.entity.WorkflowResult;
 import com.cn.common.mapper.WorkflowResultMapper;
+import com.cn.common.utils.UploadUtil;
 import com.cn.common.utils.UserUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ import java.util.List;
 public class WorkflowResultServiceImpl implements WorkflowResultService {
 
     private final WorkflowResultMapper worksMapper;
+    private final UploadUtil uploadUtil;
 
     @Override
     public WorkflowResultVo getWorkflowResultDetail(final Long workflowResultId) {
@@ -54,7 +56,7 @@ public class WorkflowResultServiceImpl implements WorkflowResultService {
                 .setType(works.getType())
                 .setWorkflowName(works.getWorkflowName())
                 .setTaskId(works.getTaskId())
-                .setUrl(works.getUrl())
+                .setUrl(uploadUtil.toSignedUrl(works.getUrl()))
                 .setWorkflowId(works.getWorkflowId())
                 .setFormParams(works.getFormParams());
     }
@@ -103,7 +105,7 @@ public class WorkflowResultServiceImpl implements WorkflowResultService {
                 .setTaskId(c.getTaskId())
                 .setWorkflowName(c.getWorkflowName())
                 .setType(c.getType())
-                .setUrl(c.getUrl())
+                .setUrl(uploadUtil.toSignedUrl(c.getUrl()))
                 .setWorkflowId(c.getWorkflowId())
                 .setFormParams(c.getFormParams()));
 

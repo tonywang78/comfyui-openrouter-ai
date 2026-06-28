@@ -23,11 +23,24 @@ public class ComfyuiUtils {
         if (fileName == null) {
             return "";
         }
-        int lastIndexOfDot = fileName.lastIndexOf('.');
-        if (lastIndexOfDot == -1 || lastIndexOfDot == fileName.length() - 1) {
+        String path = fileName;
+        int queryIdx = path.indexOf('?');
+        if (queryIdx >= 0) {
+            path = path.substring(0, queryIdx);
+        }
+        int hashIdx = path.indexOf('#');
+        if (hashIdx >= 0) {
+            path = path.substring(0, hashIdx);
+        }
+        int slashIdx = path.lastIndexOf('/');
+        if (slashIdx >= 0) {
+            path = path.substring(slashIdx + 1);
+        }
+        int lastIndexOfDot = path.lastIndexOf('.');
+        if (lastIndexOfDot == -1 || lastIndexOfDot == path.length() - 1) {
             return "";
         }
-        return fileName.substring(lastIndexOfDot + 1).toLowerCase();
+        return path.substring(lastIndexOfDot + 1).toLowerCase();
     }
 
     public static String getBodyError(final String errorBody) {

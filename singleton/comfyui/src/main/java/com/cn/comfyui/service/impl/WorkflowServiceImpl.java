@@ -576,7 +576,7 @@ public class WorkflowServiceImpl implements WorkflowService {
             return new WorkflowsVo()
                 .setWorkflowId(workflow.getId())
                 .setDescription(workflow.getDescription())
-                .setUrl(workflow.getUrl())
+                .setUrl(uploadUtil.toSignedUrl(workflow.getUrl()))
                 .setName(workflow.getName())
                 .setCategoryName(filterName)
                 .setCreditsDeducted(workflow.getCreditsDeducted());

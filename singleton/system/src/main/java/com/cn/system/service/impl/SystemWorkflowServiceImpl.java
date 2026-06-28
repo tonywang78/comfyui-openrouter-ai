@@ -14,6 +14,7 @@ import com.cn.common.mapper.WorkflowFormMapper;
 import com.cn.common.mapper.WorkflowMapper;
 import com.cn.common.mapper.WorkflowOutputMapper;
 import com.cn.common.mapper.WorkflowCategoryMapper;
+import com.cn.common.utils.UploadUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.cn.common.vo.PageVo;
 import com.cn.system.dto.*;
@@ -53,6 +54,7 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
     private final WorkflowFormMapper workflowFormMapper;
     private final WorkflowOutputMapper workflowOutputMapper;
     private final WorkflowCategoryMapper workflowCategoryMapper;
+    private final UploadUtil uploadUtil;
 
     /**
      * 解析工作流 JSON 文件，自动识别可用作输入的节点
@@ -300,7 +302,7 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
         Workflow workflow = new Workflow()
                 .setName(dto.getName())
                 .setDescription(dto.getDescription())
-                .setUrl(dto.getUrl())
+                .setUrl(normalizeOssStorageValue(dto.getUrl()))
                 .setJson(dto.getJson())
                 .setWorkflowCategoryId(dto.getWorkflowCategoryId())
                 .setCreditsDeducted(dto.getCreditsDeducted());
@@ -367,7 +369,7 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
                         .setWorkflowId(w.getId())
                         .setName(w.getName())
                         .setDescription(w.getDescription())
-                        .setUrl(w.getUrl())
+                        .setUrl(uploadUtil.toSignedUrl(w.getUrl()))
                         .setCategoryName(catNameMap.getOrDefault(w.getWorkflowCategoryId(), null))
                         .setCreditsDeducted(w.getCreditsDeducted()))
                 .collect(Collectors.toList());
@@ -443,6 +445,13 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
                         .setCategoryId(c.getId())
                         .setName(c.getName()))
                 .collect(Collectors.toList());
+    }
+
+    private String normalizeOssStorageValue(String urlOrKey) {
+        if (!StringUtils.hasText(urlOrKey) || !uploadUtil.isOwnOssResource(urlOrKey)) {
+            return urlOrKey;
+        }
+        return uploadUtil.extractObjectKey(urlOrKey);
     }
 
     /**

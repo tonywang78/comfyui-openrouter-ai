@@ -858,13 +858,13 @@ public class TaskProcessingListener {
         } else {
             throw new IllegalArgumentException("Unsupported work type: " + type);
         }
-        // 上传阿里OSS
-        final String uploadUrl = uploadUtil.uploadUrl(fullFileUrl, FilePathEnum.COMFYUI.getDec());
+        // 上传阿里 OSS（库内仅存 objectKey）
+        final String objectKey = uploadUtil.uploadUrl(fullFileUrl, FilePathEnum.COMFYUI.getDec());
         // 设置redis构建消息
         final String key = COMFYUI_TASK_LIST + userId;
         TaskInfoStructure o = (TaskInfoStructure) redisUtils.hashGet(key, taskId);
 
-        works.setUrl(uploadUrl)
+        works.setUrl(objectKey)
             .setWorkflowName(o.getWorkflowName())
             .setWorkflowId(workflowId);
 
@@ -892,7 +892,7 @@ public class TaskProcessingListener {
                 // 构建成功
                 .setStatus(TaskStatusEnum.SUCCEED.getDec())
                 .setProgress(100L)
-                .setWorkflowResultModel(new WorkflowResultModel().setWorkflowResultId(works.getId()).setUrl(works.getUrl()).setType(works.getType()));
+                .setWorkflowResultModel(new WorkflowResultModel().setWorkflowResultId(works.getId()).setUrl(uploadUtil.toSignedUrl(works.getUrl())).setType(works.getType()));
         redisUtils.hashPut(key, taskId, completedTask);
 
         // 统计：今日成功任务数 +1
@@ -1086,7 +1086,8 @@ public class TaskProcessingListener {
     // 优化后的 uploadFile 方法，采用流式传输以提高性能和内存效率
     public String uploadFile(final String uri, final String selectedServer) {
         try {
-            final URL url = new URL(uri); // 可能抛出 MalformedURLException
+            final String fetchUri = uploadUtil.isOwnOssResource(uri) ? uploadUtil.toSignedUrl(uri) : uri;
+            final URL url = new URL(fetchUri); // 可能抛出 MalformedURLException
 
             if (!isFileTypeSupported(uri)) {
                 throw new ComfyuiException("不支持该类型文件上传: " + uri);
