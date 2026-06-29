@@ -122,6 +122,16 @@ public class SaveWorkflowConfigDto {
          * - 文件类型：最大文件大小（MB）
          */
         private Long size;
+
+        /**
+         * 提示词风格（TEXT_PROMPT 可选）：NONE / SD_POSITIVE / SD_NEGATIVE / WAN_VIDEO / GENERAL
+         */
+        private String promptStyle;
+
+        /**
+         * 关联参考图字段键列表 JSON 数组字符串，如 ["12_image"]
+         */
+        private String promptImageRefs;
     }
 
     /**

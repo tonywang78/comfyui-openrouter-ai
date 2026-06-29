@@ -123,7 +123,9 @@ create table ghosts.workflow_form
     size        int                  null,
     template    varchar(255)         null,
     hidden      tinyint(1) default 0 not null comment '1=隐藏，提交时自动注入 template',
-    required    tinyint(1) default 0 null
+    required    tinyint(1) default 0 null,
+    prompt_style varchar(32) null comment '提示词风格：NONE/SD_POSITIVE/SD_NEGATIVE/WAN_VIDEO/GENERAL',
+    prompt_image_refs json null comment '关联参考图字段键列表'
 )
     comment '工作流表单表';
 

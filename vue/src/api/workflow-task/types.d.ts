@@ -45,6 +45,9 @@ export namespace GetWorkflowInterfaceApi {
         required: boolean //该控件是否必填?
         size: number //如果是 输入类型组件 则代表这个输入类型组件maxlength 如果是 上传类型组件 则代表这个上传类型组件maxsize 其它情况下 为空不必理会
         options: string //如果是 RADIO_SELECTOR CHECKBOX_SELECTOR 就会出现如 [{"key": "女孩风格", "value": "1girl"}] 其它情况下 为空
+        template?: string | null
+        promptStyle?: string
+        promptImageRefs?: string[]
     }
 
     export interface Result {

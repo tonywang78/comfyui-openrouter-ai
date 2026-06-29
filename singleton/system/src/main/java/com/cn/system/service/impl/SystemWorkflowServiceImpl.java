@@ -8,6 +8,7 @@ import com.cn.common.entity.WorkflowForm;
 import com.cn.common.entity.WorkflowOutput;
 import com.cn.common.enums.ComfyuiFormTypeEnum;
 import com.cn.common.enums.ComfyuiInputFieldEnum;
+import com.cn.common.enums.PromptStyleEnum;
 import com.cn.common.exceptions.UniversalException;
 import com.cn.common.enums.RequiredEnum;
 import com.cn.common.mapper.WorkflowFormMapper;
@@ -342,7 +343,9 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
                         .setTemplate(f.getTemplate())
                         .setRequired(f.getRequired())
                         .setSize(f.getSize())
-                        .setHidden(f.getHidden()))
+                        .setHidden(f.getHidden())
+                        .setPromptStyle(f.getPromptStyle())
+                        .setPromptImageRefs(f.getPromptImageRefs()))
                 .collect(Collectors.toList());
 
         List<WorkflowDetailVo.SavedOutputNode> savedOutputNodes = outputs.stream()
@@ -417,7 +420,9 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
                         .setTemplate(input.getTemplate())
                         .setHidden(Boolean.TRUE.equals(input.getHidden()) ? RequiredEnum.TRUE.getDec() : RequiredEnum.FALSE.getDec())
                         .setRequired(Boolean.TRUE.equals(input.getRequired()) ? RequiredEnum.TRUE.getDec() : RequiredEnum.FALSE.getDec())
-                        .setSize(input.getSize()))
+                        .setSize(input.getSize())
+                        .setPromptStyle(normalizePromptStyle(input.getPromptStyle()))
+                        .setPromptImageRefs(normalizePromptImageRefs(input.getPromptStyle(), input.getPromptImageRefs())))
                 .toList();
 
         formList.forEach(workflowFormMapper::insert);
@@ -586,6 +591,29 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
                                     config.getNodeKey()));
                 }
             }
+        }
+    }
+
+    private String normalizePromptStyle(String promptStyle) {
+        PromptStyleEnum style = PromptStyleEnum.fromDec(promptStyle);
+        return style == PromptStyleEnum.NONE ? null : style.getDec();
+    }
+
+    private String normalizePromptImageRefs(String promptStyle, String promptImageRefs) {
+        if (!PromptStyleEnum.fromDec(promptStyle).isAssistEnabled()) {
+            return null;
+        }
+        if (!StringUtils.hasText(promptImageRefs)) {
+            return null;
+        }
+        try {
+            com.alibaba.fastjson2.JSONArray arr = JSON.parseArray(promptImageRefs);
+            if (arr == null || arr.isEmpty()) {
+                return null;
+            }
+            return arr.toJSONString();
+        } catch (Exception e) {
+            throw new UniversalException("promptImageRefs 必须为 JSON 数组字符串");
         }
     }
 }

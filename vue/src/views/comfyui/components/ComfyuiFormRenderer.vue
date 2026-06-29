@@ -34,6 +34,9 @@
               v-if="formItem.type === WorkflowFormTypeEnum.TEXT_PROMPT"
               :form-item="formItem"
               :model-value="formValues[getFieldKey(formItem)]"
+              :workflow-id="formData.workflowId"
+              :field-key="getFieldKey(formItem)"
+              :image-candidates="listImageCandidates()"
               @update:model-value="updateFormValue(formItem, $event)"
             />
 
@@ -93,12 +96,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import { ElForm, ElSkeleton, ElAlert, ElButton } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { comfyuiTaskApi } from '@/api/workflow-task/workflow-task'
 import type { GetWorkflowInterfaceApi } from '@/api/workflow-task/types'
 import { WorkflowFormTypeEnum } from '@/enums'
+import { usePromptAssistContext } from '@/composables/usePromptAssistContext'
 import TextPromptInput from './form-components/TextPromptInput.vue'
 import FileUpload from './form-components/FileUpload.vue'
 import ImageScribble from './form-components/ImageScribble.vue'
@@ -124,6 +128,9 @@ const formRef = ref<InstanceType<typeof ElForm>>()
 const formData = ref<GetWorkflowInterfaceApi.Result | null>(null)
 const formValues = reactive<Record<string, any>>({})
 const formRules = reactive<Record<string, any>>({})
+
+const formValuesSnapshot = computed(() => ({ ...formValues }))
+const { listImageCandidates } = usePromptAssistContext(formData, formValuesSnapshot)
 
 
 

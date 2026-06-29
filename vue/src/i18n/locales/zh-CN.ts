@@ -395,6 +395,27 @@ export default {
         thisField: '此项'
       }
     },
+    promptAssist: {
+      title: 'AI 优化',
+      privacyHint: '参考图将发送至 AI 服务用于生成提示词。',
+      draftPlaceholder: '用口语描述你想要的效果…',
+      defaultPlaceholder: '请输入文本内容',
+      noImageHint: '上传参考图后效果更佳；也可仅根据文字生成。',
+      generate: '生成',
+      suggestion: 'AI 建议',
+      replace: '替换',
+      append: '追加',
+      regenerate: '重新生成',
+      workflowMissing: '工作流信息缺失',
+      emptyInput: '请输入描述或上传参考图',
+      generateFailed: '生成失败，请重试',
+      truncated: '结果已截断至 {max} 字符',
+      referenceImages: '参考图',
+      notUploaded: '未上传',
+      removeImage: '移出参考',
+      addImage: '加入',
+      selectAll: '全选'
+    },
     imageScribble: {
       uploadTrigger: '上传图片以开始涂抹',
       uploadHint: '支持 JPG、PNG、GIF，≤{size}MB',
@@ -678,7 +699,16 @@ export default {
         createCategory: '新增类别',
         confirm: '确定',
         coverUploadSuccess: '封面上传成功',
-        coverPreviewFailed: '封面预览失败'
+        coverPreviewFailed: '封面预览失败',
+        promptStylePlaceholder: '提示词 AI 风格',
+        promptImageRefsPlaceholder: '关联参考图（可选，留空则自动使用表单内图片）'
+      },
+      promptStyles: {
+        NONE: '不启用',
+        SD_POSITIVE: 'SD 正向提示词',
+        SD_NEGATIVE: 'SD 负向提示词',
+        WAN_VIDEO: 'Wan 视频描述',
+        GENERAL: '通用描述'
       },
       formTypes: {
         TEXT_PROMPT: '文本输入',

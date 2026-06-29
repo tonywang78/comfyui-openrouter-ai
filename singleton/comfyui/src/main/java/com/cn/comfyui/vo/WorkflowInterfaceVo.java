@@ -44,7 +44,11 @@ public class WorkflowInterfaceVo implements Serializable {
 
         private String template;
 
+        private String promptStyle;
+
         private Long size;
+
+        private List<String> promptImageRefs;
 
 
     }

@@ -1,5 +1,7 @@
 package com.cn.comfyui.service.impl;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -22,6 +24,7 @@ import com.cn.common.entity.Workflow;
 import com.cn.common.entity.WorkflowCategory;
 import com.cn.common.entity.WorkflowForm;
 import com.cn.common.enums.ComfyuiFormTypeEnum;
+import com.cn.common.enums.PromptStyleEnum;
 import com.cn.common.enums.RequiredEnum;
 import com.cn.common.enums.TaskStatusEnum;
 import com.cn.common.exceptions.CreditException;
@@ -512,6 +515,8 @@ public class WorkflowServiceImpl implements WorkflowService {
                         .setOptions(c.getOptions())
                         .setSize(c.getSize())
                         .setTemplate(c.getTemplate())
+                        .setPromptStyle(resolvePromptStyle(c.getPromptStyle()))
+                        .setPromptImageRefs(parsePromptImageRefs(c.getPromptImageRefs()))
                         .setRequired(c.getRequired().equals(RequiredEnum.TRUE.getDec()))
                         .setType(c.getType())
                         .setTips(c.getTips()))
@@ -780,6 +785,33 @@ public class WorkflowServiceImpl implements WorkflowService {
                 || ComfyuiFormTypeEnum.IMAGE_SCRIBBLE.getDec().equals(type)
                 || ComfyuiFormTypeEnum.VIDEO_UPLOAD.getDec().equals(type)
                 || ComfyuiFormTypeEnum.AUDIO_UPLOAD.getDec().equals(type);
+    }
+
+    private static String resolvePromptStyle(String promptStyle) {
+        PromptStyleEnum style = PromptStyleEnum.fromDec(promptStyle);
+        return style.getDec();
+    }
+
+    private static List<String> parsePromptImageRefs(String promptImageRefs) {
+        if (promptImageRefs == null || promptImageRefs.isBlank()) {
+            return List.of();
+        }
+        try {
+            JSONArray arr = JSON.parseArray(promptImageRefs);
+            if (arr == null || arr.isEmpty()) {
+                return List.of();
+            }
+            List<String> refs = new ArrayList<>();
+            for (int i = 0; i < arr.size(); i++) {
+                String ref = arr.getString(i);
+                if (ref != null && !ref.isBlank()) {
+                    refs.add(ref.trim());
+                }
+            }
+            return refs;
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 
 }

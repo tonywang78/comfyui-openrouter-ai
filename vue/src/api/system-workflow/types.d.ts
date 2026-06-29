@@ -58,6 +58,8 @@ export interface WorkflowDetailVo {
     required: 0 | 1
     hidden?: 0 | 1
     size?: number
+    promptStyle?: string
+    promptImageRefs?: string
   }[]
   outputNodeList: OutputNodeConfig[]
 }
@@ -72,6 +74,8 @@ export interface FormNodeConfig {
   required: 0 | 1
   hidden?: 0 | 1
   size?: number
+  promptStyle?: string
+  promptImageRefs?: string
 }
 
 export interface OutputNodeConfig {

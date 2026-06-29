@@ -56,6 +56,10 @@ public class WorkflowDetailVo implements Serializable {
         private Long size;
 
         private Long hidden;
+
+        private String promptStyle;
+
+        private String promptImageRefs;
     }
 
     @Data

@@ -35,4 +35,10 @@ public class WorkflowForm {
 
   private Long size;
 
+  /** 提示词风格：NONE / SD_POSITIVE / SD_NEGATIVE / WAN_VIDEO / GENERAL */
+  private String promptStyle;
+
+  /** 关联参考图字段键 JSON 数组，如 ["12_image"] */
+  private String promptImageRefs;
+
 }

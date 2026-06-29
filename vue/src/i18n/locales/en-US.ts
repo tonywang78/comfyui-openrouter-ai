@@ -395,6 +395,27 @@ export default {
         thisField: 'this field'
       }
     },
+    promptAssist: {
+      title: 'AI Enhance',
+      privacyHint: 'Reference images are sent to the AI service to generate prompts.',
+      draftPlaceholder: 'Describe what you want in plain language…',
+      defaultPlaceholder: 'Enter text content',
+      noImageHint: 'Upload reference images for better results, or generate from text only.',
+      generate: 'Generate',
+      suggestion: 'AI Suggestion',
+      replace: 'Replace',
+      append: 'Append',
+      regenerate: 'Regenerate',
+      workflowMissing: 'Workflow information is missing',
+      emptyInput: 'Enter a description or upload reference images',
+      generateFailed: 'Generation failed, please try again',
+      truncated: 'Result truncated to {max} characters',
+      referenceImages: 'Reference images',
+      notUploaded: 'Not uploaded',
+      removeImage: 'Remove from context',
+      addImage: 'Add',
+      selectAll: 'Select all'
+    },
     imageScribble: {
       uploadTrigger: 'Upload image to start scribbling',
       uploadHint: 'Supports JPG, PNG, GIF, ≤{size}MB',
@@ -678,7 +699,16 @@ export default {
         createCategory: 'Add Category',
         confirm: 'Confirm',
         coverUploadSuccess: 'Cover uploaded successfully',
-        coverPreviewFailed: 'Cover preview failed'
+        coverPreviewFailed: 'Cover preview failed',
+        promptStylePlaceholder: 'Prompt AI style',
+        promptImageRefsPlaceholder: 'Linked reference images (optional; uses all form images if empty)'
+      },
+      promptStyles: {
+        NONE: 'Disabled',
+        SD_POSITIVE: 'SD Positive Prompt',
+        SD_NEGATIVE: 'SD Negative Prompt',
+        WAN_VIDEO: 'Wan Video Description',
+        GENERAL: 'General Description'
       },
       formTypes: {
         TEXT_PROMPT: 'Text Input',

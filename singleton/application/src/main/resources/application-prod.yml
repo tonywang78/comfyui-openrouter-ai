@@ -161,6 +161,11 @@ open-router:
   upload:
     max-attachment-count: 8 # 附件数量限制
 
+# AI 提示词辅助（工作流表单字段）
+prompt-assist:
+  model-id: "openai/gpt-4o-mini"
+  max-output-chars: 2000
+
 server:
   port: 9000
   servlet:

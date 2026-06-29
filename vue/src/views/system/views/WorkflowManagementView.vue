@@ -178,6 +178,37 @@
               <div class="row-3" v-if="(item.type === WorkflowFormTypeEnum.RADIO_SELECTOR || item.type === WorkflowFormTypeEnum.CHECKBOX_SELECTOR) && item.enabled">
                 <el-input type="textarea" v-model="item.options" :rows="3" :placeholder="t('system.workflow.dialog.optionsPlaceholder')" />
               </div>
+              <div class="row-prompt-assist" v-if="item.type === WorkflowFormTypeEnum.TEXT_PROMPT && item.enabled">
+                <el-select
+                  v-model="item.promptStyle"
+                  style="width: 220px"
+                  :placeholder="t('system.workflow.dialog.promptStylePlaceholder')"
+                  @change="onPromptStyleChange(item)"
+                >
+                  <el-option
+                    v-for="style in PROMPT_STYLE_OPTIONS"
+                    :key="style"
+                    :label="t('system.workflow.promptStyles.' + style)"
+                    :value="style"
+                  />
+                </el-select>
+                <el-select
+                  v-if="item.promptStyle && item.promptStyle !== PromptStyleEnum.NONE"
+                  v-model="item.promptImageRefs"
+                  multiple
+                  collapse-tags
+                  collapse-tags-tooltip
+                  style="flex: 1; min-width: 240px"
+                  :placeholder="t('system.workflow.dialog.promptImageRefsPlaceholder')"
+                >
+                  <el-option
+                    v-for="opt in getImageFieldOptions(item)"
+                    :key="opt.value"
+                    :label="opt.label"
+                    :value="opt.value"
+                  />
+                </el-select>
+              </div>
               <div class="row-4">{{ t('system.workflow.dialog.inputField') }}：<el-tag type="info">{{ item.inputs }}</el-tag></div>
             </div>
           </div>
@@ -253,6 +284,7 @@ import { workflowApi } from '@/api/system-workflow/system-workflow'
 import type { ParsingWorkflowVo, FormNodeConfig, OutputNodeConfig, WorkflowListItem, WorkflowDetailVo } from '@/api/system-workflow/types'
 import { ossApi } from '@/api/oss/oss'
 import { WorkflowFormTypeEnum, WorkflowResultModelTypeEnum, WorkflowResultModelDigitalEnum } from '@/enums/workflow'
+import { PromptStyleEnum, PROMPT_STYLE_OPTIONS } from '@/enums/promptStyle'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -313,6 +345,8 @@ type ConfigFormNode = {
   size?: number
   enabled: boolean
   hidden: boolean
+  promptStyle: PromptStyleEnum | string
+  promptImageRefs: string[]
 }
 
 const configFormNodes = ref<ConfigFormNode[]>([])
@@ -389,6 +423,35 @@ onMounted(() => {
 // ---------- 编辑、删除 ----------
 type SavedFormNode = WorkflowDetailVo['savedFormNodeList'][number]
 
+const parsePromptImageRefs = (raw?: string | null): string[] => {
+  if (!raw) return []
+  try {
+    const arr = JSON.parse(raw)
+    return Array.isArray(arr) ? arr.filter((x): x is string => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+const getImageFieldOptions = (current: ConfigFormNode) => {
+  return configFormNodes.value
+    .filter(n =>
+      n.enabled
+      && (n.type === WorkflowFormTypeEnum.IMAGE_UPLOAD || n.type === WorkflowFormTypeEnum.IMAGE_SCRIBBLE)
+      && `${n.nodeKey}_${n.inputs}` !== `${current.nodeKey}_${current.inputs}`
+    )
+    .map(n => ({
+      value: `${n.nodeKey}_${n.inputs}`,
+      label: `${n.tips || t('system.workflow.dialog.unnamedNode')} (${n.nodeKey})`
+    }))
+}
+
+const onPromptStyleChange = (item: ConfigFormNode) => {
+  if (!item.promptStyle || item.promptStyle === PromptStyleEnum.NONE) {
+    item.promptImageRefs = []
+  }
+}
+
 const mapParseNodeToDefaultConfig = (
   n: ParsingWorkflowVo['formNodeList'][number],
   enabled = true
@@ -410,7 +473,9 @@ const mapParseNodeToDefaultConfig = (
   template: '',
   options: n.type === WorkflowFormTypeEnum.TEXT_CONFIGURABLE ? '' : undefined,
   enabled,
-  hidden: false
+  hidden: false,
+  promptStyle: PromptStyleEnum.NONE,
+  promptImageRefs: []
 })
 
 const mapSavedNodeToConfig = (saved: SavedFormNode): ConfigFormNode => ({
@@ -423,7 +488,9 @@ const mapSavedNodeToConfig = (saved: SavedFormNode): ConfigFormNode => ({
   required: saved.required === 1,
   size: saved.size,
   enabled: true,
-  hidden: saved.hidden === 1
+  hidden: saved.hidden === 1,
+  promptStyle: saved.promptStyle || PromptStyleEnum.NONE,
+  promptImageRefs: parsePromptImageRefs(saved.promptImageRefs)
 })
 
 const applyParsedWorkflow = (data: ParsingWorkflowVo, savedMap?: Map<string, SavedFormNode>) => {
@@ -680,7 +747,12 @@ const handleSave = async () => {
       template: i.template,
       hidden: i.hidden ? 1 : 0,
       required: i.hidden ? 0 : (i.required ? 1 : 0),
-      size: i.size
+      size: i.size,
+      promptStyle: i.promptStyle && i.promptStyle !== PromptStyleEnum.NONE ? i.promptStyle : undefined,
+      promptImageRefs:
+        i.promptStyle && i.promptStyle !== PromptStyleEnum.NONE && i.promptImageRefs.length
+          ? JSON.stringify(i.promptImageRefs)
+          : undefined
     })),
     outputNodeList: outputNodes.value
   }
@@ -1109,10 +1181,16 @@ const resetAll = () => {
 }
 
 .form-node .row-1,
-.form-node .row-2 {
+.form-node .row-2,
+.form-node .row-prompt-assist {
   display: flex;
   gap: 12px;
   align-items: center;
+}
+
+.form-node .row-prompt-assist {
+  margin-top: 8px;
+  flex-wrap: wrap;
 }
 
 .form-node .row-1 :deep(.el-checkbox__label) {
