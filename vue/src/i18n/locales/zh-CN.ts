@@ -905,6 +905,79 @@ export default {
     }
   },
 
+  generate: {
+    sidebar: {
+      newSession: '新建会话',
+      deleteConfirm: '确定删除此会话？',
+      empty: '暂无会话，点击上方新建',
+      expand: '展开侧边栏',
+      collapse: '折叠侧边栏'
+    },
+    welcome: {
+      title: '生成助手',
+      badge: 'ComfyUI 对话式提交',
+      subtitle: '用自然语言描述需求、上传参考素材、联网搜索资料，AI 帮你填好参数并提交生成任务。',
+      pickWorkflow: '预选工作流（可选，可多选）',
+      pickWorkflowHint: '点击顶部栏添加工作流，可锚定多个 ComfyUI 工作流供 AI 在对话中选择使用',
+      tryThese: '快速开始',
+      feature1Title: '对话填参',
+      feature1Desc: '用自然语言代替复杂表单',
+      feature2Title: '素材上传',
+      feature2Desc: '图片、音视频一键作为参考',
+      feature3Title: '确认后提交',
+      feature3Desc: '草稿卡片确认后才入队生成',
+      suggestion1: '文生图海报',
+      suggestion1Desc: '描述风格与主题',
+      suggestion1Msg: '帮我生成一张赛博朋克风格的产品海报，主色调蓝紫色',
+      suggestion2: '图片风格迁移',
+      suggestion2Desc: '上传参考图转换风格',
+      suggestion2Msg: '我想把上传的参考图转换成水彩画风格',
+      suggestion3: '联网查风格',
+      suggestion3Desc: '搜索趋势再生成',
+      suggestion3Msg: '去网上搜索2025年流行的插画风格，然后帮我生成一张示例图'
+    },
+    composer: {
+      placeholder: '描述你想生成的内容，可上传参考素材…',
+      webSearch: '联网搜索',
+      attach: '上传附件',
+      hint: 'Enter 发送 · Shift+Enter 换行',
+      maxAttachments: '最多 8 个附件',
+      uploadFailed: '上传失败',
+      attachmentOnly: '（附件）'
+    },
+    workflow: {
+      select: '添加工作流',
+      selectTitle: '锚定工作流',
+      addMore: '添加',
+      remove: '移除',
+      pinnedCount: '已锚定 {n} 个',
+      maxPinned: '最多锚定 {n} 个工作流',
+      searchPlaceholder: '搜索工作流…',
+      empty: '暂无工作流',
+      loadFailed: '加载工作流列表失败',
+      creditsUnit: '积分',
+      switched: '已添加工作流锚定：{name}'
+    },
+    draft: {
+      credits: '{n} 积分',
+      modify: '修改',
+      confirm: '确认提交',
+      confirmed: '已确认提交',
+      expired: '草稿已过期',
+      submitSuccess: '任务已提交',
+      submitFailed: '提交失败',
+      taskSubmitted: '任务已提交，可在下方查看进度',
+      modifyPrefix: '请根据以下草稿修改参数：{summary}'
+    },
+    task: {
+      queue: '队列 #{n}',
+      viewWork: '查看作品',
+      remake: '重新制作',
+      remakeSuccess: '已重新加入队列',
+      remakeFailed: '重新制作失败'
+    }
+  },
+
   layouts: {
     // 侧边栏菜单
     sidebar: {
@@ -915,6 +988,8 @@ export default {
         profile: '个人中心',
         aiChat: 'AI聊天',
         aiChatBadge: '免费',
+        generateAssistant: '生成助手',
+        generateBadge: 'Beta',
         redemptionCode: '兑换码',
         systemManagement: '系统管理',
         sectionAI: 'AI',

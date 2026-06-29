@@ -540,6 +540,7 @@ export class TaskWebSocketService {
     
     this._clearReconnectTimer()
     this._stopHeartbeat()
+    this._removeNetworkListeners()
 
     this._disposeSocket(this.ws, '主动断开')
     this.ws = null

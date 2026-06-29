@@ -161,6 +161,14 @@ open-router:
   upload:
     max-attachment-count: 8 # 附件数量限制
 
+# 生成助手 Agent 配置
+generation-agent:
+  model-id: "openai/gpt-4o-mini"
+  max-tool-rounds: 8
+  draft-ttl-minutes: 30
+  session-ttl-seconds: 2592000
+  default-pinned-workflow-id: null
+
 server:
   port: 9000
   servlet:

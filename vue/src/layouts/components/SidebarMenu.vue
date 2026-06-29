@@ -71,6 +71,13 @@ const menuSections = computed<MenuSection[]>(() => [
         icon: ChatIcon, 
         badge: t('layouts.sidebar.menu.aiChatBadge')
       },
+      { 
+        id: 'generate', 
+        title: t('layouts.sidebar.menu.generateAssistant'), 
+        route: '/ai/generate', 
+        icon: ChatIcon, 
+        badge: t('layouts.sidebar.menu.generateBadge')
+      },
     ]
   },
   {

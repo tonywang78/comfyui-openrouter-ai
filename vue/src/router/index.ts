@@ -8,6 +8,7 @@ import WorksPage from '@/views/works/index.vue' // 添加作品页面
 import ProfilePage from '@/views/profile/index.vue' // 添加个人中心页面
 // AI功能页面
 import AIChatPage from '@/views/ai/chat/index.vue'
+import AIGeneratePage from '@/views/ai/generate/index.vue'
 // 系统管理页面
 import SystemPage from '@/views/system/index.vue'
 
@@ -58,6 +59,29 @@ const routes: Array<RouteRecordRaw> = [
             text: '返回'
           },
           title: 'AI聊天'
+        }
+      },
+      {
+        path: 'ai/generate',
+        component: AIGeneratePage,
+        meta: {
+          hideSidebar: true,
+          requiresAuth: true,
+          backButton: {
+            show: true,
+            to: '/comfyui',
+            text: '返回'
+          },
+          title: '生成助手'
+        }
+      },
+      {
+        path: 'ai/generate/:sessionId',
+        component: AIGeneratePage,
+        meta: {
+          hideSidebar: true,
+          requiresAuth: true,
+          title: '生成助手'
         }
       },
       {

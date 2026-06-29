@@ -905,6 +905,79 @@ export default {
     }
   },
 
+  generate: {
+    sidebar: {
+      newSession: 'New session',
+      deleteConfirm: 'Delete this session?',
+      empty: 'No sessions yet',
+      expand: 'Expand sidebar',
+      collapse: 'Collapse sidebar'
+    },
+    welcome: {
+      title: 'Generation Assistant',
+      badge: 'Conversational ComfyUI',
+      subtitle: 'Describe your idea, upload references, search the web — AI fills parameters and prepares your generation job.',
+      pickWorkflow: 'Pin workflows (optional, multiple)',
+      pickWorkflowHint: 'Use the top bar to anchor multiple ComfyUI workflows for the AI to choose from',
+      tryThese: 'Quick start',
+      feature1Title: 'Chat to configure',
+      feature1Desc: 'Natural language instead of forms',
+      feature2Title: 'Upload materials',
+      feature2Desc: 'Images, audio, video as references',
+      feature3Title: 'Confirm to submit',
+      feature3Desc: 'Jobs queue only after you approve',
+      suggestion1: 'Poster from text',
+      suggestion1Desc: 'Describe style and subject',
+      suggestion1Msg: 'Create a cyberpunk product poster with blue-purple tones',
+      suggestion2: 'Style transfer',
+      suggestion2Desc: 'Upload a reference image',
+      suggestion2Msg: 'Turn my uploaded reference into watercolor style',
+      suggestion3: 'Web research',
+      suggestion3Desc: 'Search trends then generate',
+      suggestion3Msg: 'Search trending illustration styles in 2025 and generate a sample image'
+    },
+    composer: {
+      placeholder: 'Describe what you want to generate…',
+      webSearch: 'Web search',
+      attach: 'Attach files',
+      hint: 'Enter to send · Shift+Enter for new line',
+      maxAttachments: 'Up to 8 attachments',
+      uploadFailed: 'Upload failed',
+      attachmentOnly: '(attachments)'
+    },
+    workflow: {
+      select: 'Add workflow',
+      selectTitle: 'Pin workflows',
+      addMore: 'Add',
+      remove: 'Remove',
+      pinnedCount: '{n} pinned',
+      maxPinned: 'Up to {n} workflows can be pinned',
+      searchPlaceholder: 'Search workflows…',
+      empty: 'No workflows',
+      loadFailed: 'Failed to load workflows',
+      creditsUnit: 'credits',
+      switched: 'Workflow pinned: {name}'
+    },
+    draft: {
+      credits: '{n} credits',
+      modify: 'Edit',
+      confirm: 'Confirm submit',
+      confirmed: 'Submitted',
+      expired: 'Draft expired',
+      submitSuccess: 'Task submitted',
+      submitFailed: 'Submit failed',
+      taskSubmitted: 'Task submitted — track progress below',
+      modifyPrefix: 'Please revise based on this draft: {summary}'
+    },
+    task: {
+      queue: 'Queue #{n}',
+      viewWork: 'View work',
+      remake: 'Remake',
+      remakeSuccess: 'Re-queued',
+      remakeFailed: 'Remake failed'
+    }
+  },
+
   layouts: {
     // Sidebar menu
     sidebar: {
@@ -915,6 +988,8 @@ export default {
         profile: 'Profile',
         aiChat: 'AI Chat',
         aiChatBadge: 'Free',
+        generateAssistant: 'Generate Assistant',
+        generateBadge: 'Beta',
         redemptionCode: 'Redeem Code',
         systemManagement: 'System',
         sectionAI: 'AI',
