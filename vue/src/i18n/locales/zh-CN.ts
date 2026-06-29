@@ -672,7 +672,8 @@ export default {
         categoryNamePlaceholder: '请输入类别名称',
         createCategory: '新增类别',
         confirm: '确定',
-        coverUploadSuccess: '封面上传成功'
+        coverUploadSuccess: '封面上传成功',
+        coverPreviewFailed: '封面预览失败'
       },
       formTypes: {
         TEXT_PROMPT: '文本输入',

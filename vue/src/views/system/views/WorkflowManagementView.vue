@@ -91,18 +91,36 @@
                 <el-input v-model="baseForm.name" :placeholder="t('system.workflow.dialog.namePlaceholder')" />
               </el-form-item>
               <el-form-item :label="t('system.workflow.dialog.cover')">
-                <div class="cover-row">
-                  <el-input v-model="baseForm.url" :placeholder="t('system.workflow.dialog.coverPlaceholder')" />
-                  <el-upload :show-file-list="false" :http-request="handleCoverUpload" accept="image/*">
-                    <el-button class="secondary-btn">{{ t('system.workflow.dialog.upload') }}</el-button>
-                  </el-upload>
+                <div class="cover-field">
+                  <div class="cover-row">
+                    <el-input v-model="baseForm.url" :placeholder="t('system.workflow.dialog.coverPlaceholder')" />
+                    <el-upload :show-file-list="false" :http-request="handleCoverUpload" accept="image/*">
+                      <el-button class="secondary-btn">{{ t('system.workflow.dialog.upload') }}</el-button>
+                    </el-upload>
+                  </div>
+                  <div v-if="baseForm.url" class="cover-preview">
+                    <el-image
+                      :src="baseForm.url"
+                      fit="cover"
+                      :preview-src-list="[baseForm.url]"
+                      :alt="t('system.workflow.dialog.cover')"
+                    >
+                      <template #error>
+                        <div class="cover-preview-error">{{ t('system.workflow.dialog.coverPreviewFailed') }}</div>
+                      </template>
+                    </el-image>
+                  </div>
                 </div>
               </el-form-item>
               <el-form-item :label="t('system.workflow.dialog.description')">
                 <el-input v-model="baseForm.description" type="textarea" :rows="2" :placeholder="t('system.workflow.dialog.descriptionPlaceholder')" />
               </el-form-item>
               <el-form-item :label="t('system.workflow.dialog.category')" prop="workflowCategoryId">
-                <el-select v-model="baseForm.workflowCategoryId" :placeholder="t('system.workflow.dialog.categoryPlaceholder')" style="width: 260px">
+                <el-select
+                  v-model="baseForm.workflowCategoryId"
+                  :placeholder="t('system.workflow.dialog.categoryPlaceholder')"
+                  style="width: 260px"
+                >
                   <el-option v-for="c in categoryList" :key="c.categoryId" :label="c.name" :value="c.categoryId" />
                 </el-select>
               </el-form-item>
@@ -244,11 +262,17 @@ const saving = ref(false)
 const jsonFileRef = ref<HTMLInputElement | null>(null)
 const createFormRef = ref<FormInstance>()
 
-const baseForm = reactive({
+const baseForm = reactive<{
+  name: string
+  description: string
+  url: string
+  workflowCategoryId?: number
+  creditsDeducted: number
+}>({
   name: '',
   description: '',
   url: '',
-  workflowCategoryId: '',
+  workflowCategoryId: undefined,
   creditsDeducted: 0
 })
 
@@ -425,7 +449,7 @@ const openEditDialog = async (row: WorkflowListItem) => {
     baseForm.name = detail.name
     baseForm.description = detail.description || ''
     baseForm.url = detail.url || ''
-    baseForm.workflowCategoryId = detail.workflowCategoryId != null ? String(detail.workflowCategoryId) : ''
+    baseForm.workflowCategoryId = detail.workflowCategoryId ?? undefined
     baseForm.creditsDeducted = detail.creditsDeducted
 
     const savedMap = new Map(detail.savedFormNodeList.map(item => [item.nodeKey, item]))
@@ -633,7 +657,7 @@ const handleSave = async () => {
     description: baseForm.description || undefined,
     url: baseForm.url || undefined,
     json: parseResult.json,
-    workflowCategoryId: baseForm.workflowCategoryId || '1',
+    workflowCategoryId: baseForm.workflowCategoryId != null ? String(baseForm.workflowCategoryId) : '1',
     creditsDeducted: baseForm.creditsDeducted,
     formNodeList: enabledFormNodes.map<FormNodeConfig>(i => ({
       nodeKey: i.nodeKey,
@@ -685,7 +709,7 @@ const resetAll = () => {
   baseForm.name = ''
   baseForm.description = ''
   baseForm.url = ''
-  baseForm.workflowCategoryId = ''
+  baseForm.workflowCategoryId = undefined
   baseForm.creditsDeducted = 0
   parseResult.json = ''
   parseResult.allNodeList = []
@@ -912,10 +936,43 @@ const resetAll = () => {
   font-weight: 600;
 }
 
+.base-form .cover-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
 .base-form .cover-row {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+.base-form .cover-preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--el-border-color);
+  background: var(--el-fill-color);
+}
+
+.base-form .cover-preview :deep(.el-image) {
+  width: 100%;
+  height: 100%;
+}
+
+.base-form .cover-preview-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  text-align: center;
+  padding: 8px;
 }
 
 .parse-row {

@@ -672,7 +672,8 @@ export default {
         categoryNamePlaceholder: 'Please enter category name',
         createCategory: 'Add Category',
         confirm: 'Confirm',
-        coverUploadSuccess: 'Cover uploaded successfully'
+        coverUploadSuccess: 'Cover uploaded successfully',
+        coverPreviewFailed: 'Cover preview failed'
       },
       formTypes: {
         TEXT_PROMPT: 'Text Input',
