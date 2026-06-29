@@ -60,6 +60,7 @@
                 <configuration>
                     <skip>false</skip>
                     <mainClass>com.cn.Application</mainClass>
+                    <jvmArguments>-Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8</jvmArguments>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>

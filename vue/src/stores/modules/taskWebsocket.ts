@@ -70,8 +70,13 @@ export const useTaskWebSocketStore = defineStore('taskWebsocket', () => {
     }
 
     // 检查是否已经连接
-    if (isConnected.value) {
+    if (isConnected.value || taskWebSocket.isConnected) {
       console.log('WebSocket已经连接，跳过重复连接')
+      return true
+    }
+
+    if (taskWebSocket.reconnecting) {
+      console.log('WebSocket正在重连中，跳过重复连接')
       return true
     }
 

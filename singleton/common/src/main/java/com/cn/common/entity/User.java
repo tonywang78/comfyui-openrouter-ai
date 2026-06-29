@@ -16,11 +16,17 @@ public class User {
 
     private String email;
 
+    private String phone;
+
     private String password;
 
     private String nickname;
 
     private String avatar;
+
+    private String wechatUnionId;
+
+    private String wechatOpenid;
 
     private String role;
 

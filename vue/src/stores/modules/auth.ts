@@ -1,203 +1,225 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { authApi } from '@/api/auth/auth'
-import type { RegisterApi, ForgotPasswordApi } from '@/api/auth/types'
+import type { RegisterApi, ForgotPasswordApi, PhoneRegisterApi, WechatBindPhoneApi } from '@/api/auth/types'
 import { ElNotification } from 'element-plus'
 import router from '@/router'
+import i18n from '@/i18n'
 
-// 认证相关store
 export const useAuthStore = defineStore('auth', () => {
-  // 状态
   const token = ref(localStorage.getItem('token') || '')
-  
-  // 计算属性
   const isLoggedIn = computed(() => !!token.value)
-  
-  // 方法
-  // 密码登录
+
+  async function fetchUserInfoAfterLogin() {
+    const { useUserStore } = await import('../modules/user')
+    const userStore = useUserStore()
+    await userStore.fetchUserInfo()
+  }
+
   async function passwordLogin(email: string, password: string) {
     try {
-      console.log('开始密码登录请求')
       const tokenValue = await authApi.reqPasswordLogin({ email, password })
-      console.log('获取到token:', tokenValue)
       setToken(tokenValue)
-      console.log('token已保存到localStorage:', localStorage.getItem('token'))
-      
-      // 延迟导入userStore，避免循环依赖
-      const { useUserStore } = await import('../modules/user')
-      const userStore = useUserStore()
-      await userStore.fetchUserInfo()
-      
+      await fetchUserInfoAfterLogin()
       return true
     } catch (err: any) {
       console.error('登录失败:', err)
       return false
     }
   }
-  
-  // 邮箱登录
+
   async function emailLogin(email: string, code: string) {
     try {
-      console.log('开始邮箱登录请求')
       const tokenValue = await authApi.reqEmailLogin({ email, code })
-      console.log('获取到token:', tokenValue)
       setToken(tokenValue)
-      console.log('token已保存到localStorage:', localStorage.getItem('token'))
-      
-      // 延迟导入userStore，避免循环依赖
-      const { useUserStore } = await import('../modules/user')
-      const userStore = useUserStore()
-      await userStore.fetchUserInfo()
-      
+      await fetchUserInfoAfterLogin()
       return true
     } catch (err: any) {
       console.error('邮箱登录失败:', err)
       return false
     }
   }
-  
-  // 获取验证码
-  async function getVerificationCode(email: string, password: string) {
+
+  async function phoneLogin(phone: string, code: string) {
     try {
-      await authApi.reqGetVerificationCode({ email, password })
-      ElNotification.success({
-        title: '成功',
-        message: '验证码已发送'
-      })
+      const tokenValue = await authApi.reqPhoneLogin({ phone, code })
+      setToken(tokenValue)
+      await fetchUserInfoAfterLogin()
       return true
     } catch (err: any) {
+      console.error('手机号登录失败:', err)
       return false
     }
   }
-  
-  // 注册
+
+  async function getVerificationCode(email: string) {
+    try {
+      await authApi.reqGetVerificationCode({ email, password: '' })
+      ElNotification.success({
+        title: i18n.global.t('common.success'),
+        message: i18n.global.t('auth.getCode')
+      })
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  async function getPhoneVerificationCode(phone: string) {
+    try {
+      await authApi.reqPhoneVerificationCode({ phone })
+      ElNotification.success({
+        title: i18n.global.t('common.success'),
+        message: i18n.global.t('auth.phoneCodeSent')
+      })
+      return true
+    } catch {
+      return false
+    }
+  }
+
   async function register(params: RegisterApi.Params) {
     try {
       await authApi.reqRegister(params)
       ElNotification.success({
-        title: '成功',
-        message: '注册成功'
+        title: i18n.global.t('common.success'),
+        message: i18n.global.t('auth.registerSuccess')
       })
       return true
-    } catch (err: any) {
+    } catch {
       return false
     }
   }
-  
-  // 忘记密码
+
+  async function phoneRegister(params: PhoneRegisterApi.Params) {
+    try {
+      await authApi.reqPhoneRegister(params)
+      ElNotification.success({
+        title: i18n.global.t('common.success'),
+        message: i18n.global.t('auth.registerSuccess')
+      })
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  async function bindWechatPhone(params: WechatBindPhoneApi.Params) {
+    try {
+      const tokenValue = await authApi.reqWechatBindPhone(params)
+      setToken(tokenValue)
+      await fetchUserInfoAfterLogin()
+      return true
+    } catch (err: any) {
+      console.error('微信绑定手机号失败:', err)
+      return false
+    }
+  }
+
+  async function loginWithToken(tokenValue: string) {
+    setToken(tokenValue)
+    await fetchUserInfoAfterLogin()
+    return true
+  }
+
   async function forgotPassword(params: ForgotPasswordApi.Params) {
     try {
       await authApi.reqForgotPassword(params)
       ElNotification.success({
-        title: '成功',
-        message: '密码重置成功'
+        title: i18n.global.t('common.success'),
+        message: i18n.global.t('auth.resetPasswordSuccess')
       })
       return true
-    } catch (err: any) {
+    } catch {
       return false
     }
   }
-  
-  // 设置token
+
   function setToken(tokenValue: string | any) {
     if (!tokenValue) {
       console.error('设置token失败: tokenValue为空')
       return
     }
-    
-    // 处理对象形式的token响应 {code, msg, data}
+
     let actualToken = tokenValue
     if (tokenValue && typeof tokenValue === 'object' && tokenValue.data) {
-      console.log('从对象中提取真实token:', tokenValue.data)
       actualToken = tokenValue.data
     }
-    
-    console.log('设置token:', actualToken)
+
     token.value = actualToken
     localStorage.setItem('token', actualToken)
-    console.log('token设置后检查localStorage:', localStorage.getItem('token'))
   }
-  
-  // 退出登录
+
   async function logout() {
     try {
-      // 调用退出登录接口
       await authApi.reqLogout()
-      
-      // 断开WebSocket连接
+
       try {
         const { useTaskWebSocketStore: useComfyuiTaskProgressWebSocketStore } = await import('./taskWebsocket')
         const webSocketStore = useComfyuiTaskProgressWebSocketStore()
         webSocketStore.disconnect()
-        console.log('WebSocket连接已断开')
       } catch (error) {
         console.error('断开WebSocket连接失败:', error)
       }
-      
-      // 清除本地状态
+
       token.value = ''
       localStorage.removeItem('token')
-      
-      // 延迟导入userStore，避免循环依赖，并清除用户信息
+
       const { useUserStore } = await import('../modules/user')
       const userStore = useUserStore()
       userStore.clearUserInfo()
-      
+
       ElNotification.success({
-        title: '成功',
-        message: '已安全退出登录'
+        title: i18n.global.t('common.success'),
+        message: i18n.global.t('auth.logout')
       })
-      
-      // 重定向到首页，使用replace防止用户通过浏览器后退按钮回到之前的页面
+
       await router.replace('/')
       window.location.reload()
-      
       return true
     } catch (error: any) {
       console.error('退出登录失败:', error)
-      
-      // 断开WebSocket连接
+
       try {
         const { useTaskWebSocketStore: useComfyuiTaskProgressWebSocketStore } = await import('./taskWebsocket')
         const webSocketStore = useComfyuiTaskProgressWebSocketStore()
         webSocketStore.disconnect()
-        console.log('WebSocket连接已断开')
-      } catch (error) {
-        console.error('断开WebSocket连接失败:', error)
+      } catch (disconnectError) {
+        console.error('断开WebSocket连接失败:', disconnectError)
       }
-      
-      // 即使接口调用失败，也要清除本地状态
+
       token.value = ''
       localStorage.removeItem('token')
-      
-      // 清除用户信息
+
       const { useUserStore } = await import('../modules/user')
       const userStore = useUserStore()
       userStore.clearUserInfo()
-      
+
       ElNotification.warning({
-        title: '警告',
-        message: '退出登录时发生错误，已清除本地登录状态'
+        title: i18n.global.t('common.warning'),
+        message: i18n.global.t('common.error')
       })
-      
-      // 即使失败也要重定向到首页
+
       await router.replace('/')
       window.location.reload()
-      
       return false
     }
   }
-  
-  // 返回状态和方法
+
   return {
     token,
     isLoggedIn,
     passwordLogin,
     emailLogin,
+    phoneLogin,
     getVerificationCode,
+    getPhoneVerificationCode,
     register,
+    phoneRegister,
+    bindWechatPhone,
+    loginWithToken,
     forgotPassword,
     setToken,
     logout
   }
-}) 
+})

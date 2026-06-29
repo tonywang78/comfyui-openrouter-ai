@@ -45,15 +45,24 @@ create index idx_status
 
 create table ghosts.user
 (
-    id          bigint auto_increment
+    id               bigint auto_increment
         primary key,
-    email       varchar(255)                                     null,
-    nickname    varchar(255)                                     null,
-    password    varchar(255)                                     not null,
-    avatar      varchar(255)                                     null,
-    role        enum ('USER', 'ADMIN') default 'USER'            not null,
-    create_time datetime               default CURRENT_TIMESTAMP not null,
-    update_time datetime               default CURRENT_TIMESTAMP not null
+    email            varchar(255)                                     null,
+    phone            varchar(20)                                      null,
+    nickname         varchar(255)                                     null,
+    password         varchar(255)                                     not null,
+    avatar           varchar(255)                                     null,
+    wechat_union_id  varchar(64)                                      null,
+    wechat_openid    varchar(64)                                      null,
+    role             enum ('USER', 'ADMIN') default 'USER'            not null,
+    create_time      datetime               default CURRENT_TIMESTAMP not null,
+    update_time      datetime               default CURRENT_TIMESTAMP not null,
+    constraint uk_user_phone
+        unique (phone),
+    constraint uk_user_wechat_union
+        unique (wechat_union_id),
+    constraint uk_user_wechat_openid
+        unique (wechat_openid)
 )
     comment '用户表';
 

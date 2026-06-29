@@ -33,6 +33,7 @@ export class TaskWebSocketService {
   private isHeartbeatTimeout: boolean = false  // 标记是否是心跳超时导致的关闭
   private networkOnlineHandler: (() => void) | null = null
   private visibilityChangeHandler: (() => void) | null = null
+  private beforeUnloadHandler: (() => void) | null = null
   
   // 事件监听器
   private listeners: {
@@ -56,10 +57,7 @@ export class TaskWebSocketService {
 
   // 连接WebSocket
   async connect(config: WebSocketConfig): Promise<void> {
-    if (this.isDestroyed) {
-      console.warn('WebSocket服务已销毁，无法连接')
-      return
-    }
+    this.isDestroyed = false
 
     if (this.isConnecting) {
       console.log('WebSocket正在连接中...')
@@ -68,6 +66,11 @@ export class TaskWebSocketService {
 
     if (this.ws?.readyState === WebSocket.OPEN) {
       console.log('WebSocket已连接')
+      return
+    }
+
+    if (this.ws?.readyState === WebSocket.CONNECTING) {
+      console.log('WebSocket正在建立连接...')
       return
     }
 
@@ -92,6 +95,25 @@ export class TaskWebSocketService {
     }
   }
 
+  private _clearReconnectTimer(): void {
+    if (this.reconnectTimer !== null) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+  }
+
+  /** 关闭并解绑 socket，避免重连时遗留孤儿连接 */
+  private _disposeSocket(socket: WebSocket | null, reason = 'replaced'): void {
+    if (!socket) return
+    socket.onopen = null
+    socket.onmessage = null
+    socket.onerror = null
+    socket.onclose = null
+    if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+      socket.close(1000, reason)
+    }
+  }
+
   private async _connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.config) {
@@ -99,23 +121,32 @@ export class TaskWebSocketService {
         return
       }
 
+      // 新建连接前先关闭旧连接，防止服务端连接数泄漏
+      this._disposeSocket(this.ws)
+      this.ws = null
+
       const wsUrl = `${this.config.url}?token=${this.config.token}`
       console.log(`尝试连接WebSocket: ${wsUrl}`)
 
-      this.ws = new WebSocket(wsUrl)
+      const socket = new WebSocket(wsUrl)
+      this.ws = socket
 
       // 连接成功
-      this.ws.onopen = () => {
+      socket.onopen = () => {
+        if (this.ws !== socket) return
         console.log('WebSocket连接成功')
         this.isConnecting = false
         this.retryCount = 0
+        this.isReconnecting = false
+        this._clearReconnectTimer()
         this._startHeartbeat()
         this.listeners.onConnect?.()
         resolve()
       }
 
       // 接收消息
-      this.ws.onmessage = (event) => {
+      socket.onmessage = (event) => {
+        if (this.ws !== socket) return
         try {
           // 检查是否为空或无效数据
           if (!event.data || event.data === 'undefined' || event.data === 'null') {
@@ -198,29 +229,35 @@ export class TaskWebSocketService {
       }
 
       // 连接关闭
-      this.ws.onclose = (event) => {
+      socket.onclose = (event) => {
+        const isCurrentSocket = this.ws === socket
         console.log('WebSocket连接关闭:', event.code, event.reason)
         this.isConnecting = false
         this._stopHeartbeat()
 
-        this.ws = null
-        
+        if (isCurrentSocket) {
+          this.ws = null
+        }
+
+        // 过期连接的 close 事件不触发重连
+        if (!isCurrentSocket) {
+          return
+        }
 
         const shouldReconnect = !this.isDestroyed
         
         if (shouldReconnect) {
-          // 尝试重连
           this.isReconnecting = true
           const reason = this.isHeartbeatTimeout ? '心跳超时' : '连接意外关闭'
           this._attemptReconnect(reason)
         } else {
-          // 正常关闭或已销毁，通知disconnect
           this.listeners.onDisconnect?.(event.reason || '连接关闭')
         }
       }
 
       // 连接错误
-      this.ws.onerror = (error) => {
+      socket.onerror = (error) => {
+        if (this.ws !== socket) return
         console.error('WebSocket连接错误:', error)
         this.isConnecting = false
         this.listeners.onError?.(error)
@@ -267,6 +304,15 @@ export class TaskWebSocketService {
       return
     }
 
+    if (this.isConnecting || this.ws?.readyState === WebSocket.OPEN) {
+      return
+    }
+
+    // 已有重连计划或正在重连，避免并发建连
+    if (this.reconnectTimer !== null) {
+      return
+    }
+
     // 无限重试模式：移除重试次数上限检查
     const maxRetries = this.config.maxRetries || 5
     const isInfiniteRetry = maxRetries === Infinity
@@ -288,30 +334,34 @@ export class TaskWebSocketService {
     console.log(`WebSocket将在${delay}ms后进行${retryInfo} (原因: ${reason})`)
 
     this.reconnectTimer = window.setTimeout(async () => {
+      this.reconnectTimer = null
       if (this.isDestroyed) {
+        this.isReconnecting = false
+        return
+      }
+
+      if (this.isConnecting || this.ws?.readyState === WebSocket.OPEN) {
         this.isReconnecting = false
         return
       }
 
       try {
         console.log(`开始${retryInfo}...`)
-        // 重置心跳超时标志
         this.isHeartbeatTimeout = false
+        this.isConnecting = true
         await this._connect()
-        // 重连成功，重置计数器
         console.log('重连成功!')
         this.retryCount = 0
         this.isReconnecting = false
       } catch (error) {
         console.warn(`${retryInfo}失败:`, error)
+        this.isConnecting = false
         
-        // 检查是否已达到最大重连次数
         if (!isInfiniteRetry && this.retryCount >= maxRetries) {
           console.error('所有重连尝试都已失败')
           this.isReconnecting = false
           this.listeners.onDisconnect?.('重连失败')
         } else {
-          // 继续尝试重连
           this._attemptReconnect('重连失败')
         }
       }
@@ -432,7 +482,6 @@ export class TaskWebSocketService {
       console.log('检测到网络恢复，尝试重新连接WebSocket...')
       
       if (!this.isConnected && !this.isConnecting && !this.isDestroyed && this.config) {
-        // 重置重连计数，网络恢复时给更多机会
         this.retryCount = 0
         this._attemptReconnect('网络恢复')
       }
@@ -443,22 +492,27 @@ export class TaskWebSocketService {
       if (document.visibilityState === 'visible') {
         console.log('页面切换到前台，检查WebSocket连接状态...')
         
-        // 页面回到前台时，检查连接状态（避免与已有重连流程冲突）
-        if (!this.isConnected && !this.isConnecting && !this.isReconnecting && !this.isDestroyed && this.config) {
+        if (!this.isConnected && !this.isConnecting && !this.isDestroyed && this.config) {
           console.log('WebSocket未连接，尝试重新连接...')
           this.retryCount = 0
           this._attemptReconnect('页面切回前台')
         } else if (this.isConnected) {
-          // 如果已连接，发送一个心跳确认连接正常
           this.send({ type: 'ping' })
-        } else if (this.isReconnecting) {
+        } else if (this.isReconnecting || this.reconnectTimer !== null) {
           console.log('WebSocket正在重连中，无需重复触发')
         }
       }
     }
+
+    this.beforeUnloadHandler = () => {
+      this._clearReconnectTimer()
+      this._disposeSocket(this.ws, 'page unload')
+      this.ws = null
+    }
     
     window.addEventListener('online', this.networkOnlineHandler)
     document.addEventListener('visibilitychange', this.visibilityChangeHandler)
+    window.addEventListener('beforeunload', this.beforeUnloadHandler)
   }
 
   // 清理网络监听器
@@ -472,6 +526,11 @@ export class TaskWebSocketService {
       document.removeEventListener('visibilitychange', this.visibilityChangeHandler)
       this.visibilityChangeHandler = null
     }
+
+    if (this.beforeUnloadHandler) {
+      window.removeEventListener('beforeunload', this.beforeUnloadHandler)
+      this.beforeUnloadHandler = null
+    }
   }
 
   // 断开连接
@@ -479,21 +538,12 @@ export class TaskWebSocketService {
     this.isDestroyed = true
     this.isReconnecting = false
     
-    // 清理定时器
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer)
-      this.reconnectTimer = null
-    }
+    this._clearReconnectTimer()
     this._stopHeartbeat()
-    this._removeNetworkListeners()
 
-    // 关闭WebSocket连接
-    if (this.ws) {
-      this.ws.close(1000, '主动断开')
-      this.ws = null
-    }
+    this._disposeSocket(this.ws, '主动断开')
+    this.ws = null
 
-    // 清理监听器
     this.listeners = {}
     this.retryCount = 0
     this.isConnecting = false
@@ -547,15 +597,14 @@ export class TaskWebSocketService {
 
     console.log('手动触发重连...')
     
-    // 关闭当前连接
-    if (this.ws) {
-      this.ws.close()
-    }
+    this._clearReconnectTimer()
+    this._disposeSocket(this.ws)
+    this.ws = null
     
     // 重置状态
     this.retryCount = 0
     this.isReconnecting = false
-    this.isConnecting = false
+    this.isConnecting = true
     
     // 尝试重连
     if (this.config) {

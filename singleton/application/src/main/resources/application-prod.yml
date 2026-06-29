@@ -35,6 +35,9 @@ ali:
   certified:
     access-key: "${ALI_ACCESS_KEY}"
     secret-key: "${ALI_SECRET_KEY}"
+  sms:
+    sign-name: "${ALI_SMS_SIGN_NAME:}"
+    template-code: "${ALI_SMS_TEMPLATE_CODE:}"
   oss:
     endpoint: "${ALI_OSS_ENDPOINT:oss-cn-beijing.aliyuncs.com}"
     bucket-name: "${ALI_OSS_BUCKET}"
@@ -162,3 +165,9 @@ server:
   port: 9000
   servlet:
     context-path: /api
+
+wechat:
+  open-platform:
+    app-id: "${WECHAT_APP_ID:}"
+    app-secret: "${WECHAT_APP_SECRET:}"
+    redirect-uri: "${WECHAT_REDIRECT_URI:}"

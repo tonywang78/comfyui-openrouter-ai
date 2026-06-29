@@ -42,3 +42,8 @@ server:
   servlet:
     context-path: /api
 
+# Windows 终端多为 UTF-8，而 JDK 默认 stdout.encoding=GBK，会导致业务日志中文乱码
+logging:
+  charset:
+    console: UTF-8
+

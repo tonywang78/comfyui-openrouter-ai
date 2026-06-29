@@ -7,6 +7,9 @@ import LoginForm from './components/LoginForm.vue'
 import RegisterForm from './components/RegisterForm.vue'
 import CodeLoginForm from './components/CodeLoginForm.vue'
 import ForgotPasswordForm from './components/ForgotPasswordForm.vue'
+import PhoneLoginForm from './components/PhoneLoginForm.vue'
+import PhoneRegisterForm from './components/PhoneRegisterForm.vue'
+import WeChatLoginPanel from './components/WeChatLoginPanel.vue'
 import lottie from 'lottie-web'
 import logoAnimation from '@/assets/lottie/logo.json'
 import { useAuthStore } from '@/stores'
@@ -17,25 +20,26 @@ const authStore = useAuthStore()
 const userStore = useUserStore()
 
 const visible = ref(false)
-const activeTab = ref('password') // 'password', 'code'
-const viewState = ref('login') // 'login', 'register', 'forgotPassword'
+const activeTab = ref('phone')
+const viewState = ref<'login' | 'register' | 'phoneRegister' | 'forgotPassword'>('login')
 const logoContainer = ref<HTMLElement | null>(null)
 
 const passwordLoginLoading = ref(false)
 const codeLoginLoading = ref(false)
+const phoneLoginLoading = ref(false)
 const registerLoading = ref(false)
+const phoneRegisterLoading = ref(false)
 const forgotPasswordLoading = ref(false)
+const wechatBindLoading = ref(false)
 
 let logoAnimation_instance: any = null
 
 const initAnimation = () => {
-  // 确保先清理之前的动画实例
   if (logoAnimation_instance) {
     logoAnimation_instance.destroy()
     logoAnimation_instance = null
   }
-  
-  // 初始化新的动画实例
+
   if (logoContainer.value) {
     try {
       logoAnimation_instance = lottie.loadAnimation({
@@ -57,29 +61,29 @@ const handleClose = () => {
 
 const openDialog = () => {
   visible.value = true
-  activeTab.value = 'password'
+  activeTab.value = 'phone'
   viewState.value = 'login'
-  // 对话框打开时初始化动画
   nextTick(() => {
     initAnimation()
   })
 }
 
+const finishLogin = async () => {
+  ElNotification.success({
+    title: t('common.success'),
+    message: t('auth.loginSuccess')
+  })
+  handleClose()
+  await userStore.handleLoginSuccess()
+  emitter.emit(LOGIN_SUCCESS)
+}
+
 const handleLogin = async (loginForm: { account: string; password: string }) => {
-  // 注意：这里接收的参数是 account，但 API 需要的是 email
   passwordLoginLoading.value = true
   try {
     const success = await authStore.passwordLogin(loginForm.account, loginForm.password)
     if (success) {
-      // 登录成功后获取用户信息并刷新页面
-      ElNotification.success({
-        title: t('common.success'),
-        message: t('auth.loginSuccess')
-      })
-      handleClose()
-      await userStore.handleLoginSuccess()
-      // 触发登录成功事件
-      emitter.emit(LOGIN_SUCCESS)
+      await finishLogin()
     }
   } finally {
     passwordLoginLoading.value = false
@@ -91,14 +95,24 @@ const handleRegister = async (registerForm: { email: string; code: string; passw
   try {
     const success = await authStore.register(registerForm)
     if (success) {
-      ElNotification.success({
-        title: t('common.success'),
-        message: t('auth.registerSuccess')
-      })
       viewState.value = 'login'
+      activeTab.value = 'password'
     }
   } finally {
     registerLoading.value = false
+  }
+}
+
+const handlePhoneRegister = async (registerForm: { phone: string; code: string; password?: string }) => {
+  phoneRegisterLoading.value = true
+  try {
+    const success = await authStore.phoneRegister(registerForm)
+    if (success) {
+      viewState.value = 'login'
+      activeTab.value = 'phone'
+    }
+  } finally {
+    phoneRegisterLoading.value = false
   }
 }
 
@@ -107,18 +121,39 @@ const handleCodeLogin = async (codeLoginForm: { email: string; code: string }) =
   try {
     const success = await authStore.emailLogin(codeLoginForm.email, codeLoginForm.code)
     if (success) {
-      // 登录成功后获取用户信息并刷新页面
-      ElNotification.success({
-        title: t('common.success'),
-        message: t('auth.loginSuccess')
-      })
-      handleClose()
-      await userStore.handleLoginSuccess()
-      // 触发登录成功事件
-      emitter.emit(LOGIN_SUCCESS)
+      await finishLogin()
     }
   } finally {
     codeLoginLoading.value = false
+  }
+}
+
+const handlePhoneLogin = async (phoneLoginForm: { phone: string; code: string }) => {
+  phoneLoginLoading.value = true
+  try {
+    const success = await authStore.phoneLogin(phoneLoginForm.phone, phoneLoginForm.code)
+    if (success) {
+      await finishLogin()
+    }
+  } finally {
+    phoneLoginLoading.value = false
+  }
+}
+
+const handleWechatLoginSuccess = async (token: string) => {
+  await authStore.loginWithToken(token)
+  await finishLogin()
+}
+
+const handleWechatBindPhone = async (payload: { bindTicket: string; phone: string; code: string }) => {
+  wechatBindLoading.value = true
+  try {
+    const success = await authStore.bindWechatPhone(payload)
+    if (success) {
+      await finishLogin()
+    }
+  } finally {
+    wechatBindLoading.value = false
   }
 }
 
@@ -127,32 +162,24 @@ const handlePasswordReset = async (data: { email: string; code: string; password
   try {
     const success = await authStore.forgotPassword(data)
     if (success) {
-      ElNotification.success({
-        title: t('common.success'),
-        message: t('auth.resetPasswordSuccess')
-      })
       viewState.value = 'login'
+      activeTab.value = 'password'
     }
   } finally {
     forgotPasswordLoading.value = false
   }
 }
 
-const handleGetLoginCode = async (email: string, password?: string) => {
-  if (viewState.value === 'login' || viewState.value === 'register' || viewState.value === 'forgotPassword') {
-    try {
-      // 根据当前视图状态决定是否需要提供密码
-      if (viewState.value === 'login') {
-        // 邮箱验证码登录时不需要密码
-        await authStore.getVerificationCode(email, '')
-      } else {
-        // 注册和忘记密码需要密码
-        await authStore.getVerificationCode(email, password || '')
-      }
-    } catch (error) {
-      console.error('Failed to send verification code:', error)
-    }
-  }
+const handleGetLoginCode = async (email: string) => {
+  await authStore.getVerificationCode(email)
+}
+
+const handleGetPhoneCode = async (phone: string) => {
+  await authStore.getPhoneVerificationCode(phone)
+}
+
+const goRegister = () => {
+  viewState.value = activeTab.value === 'phone' ? 'phoneRegister' : 'register'
 }
 
 onMounted(() => {
@@ -166,17 +193,14 @@ onUnmounted(() => {
   }
 })
 
-// 监听 visible 变化
 watch(visible, (newVal) => {
   if (newVal) {
     nextTick(() => {
       initAnimation()
     })
-  } else {
-    if (logoAnimation_instance) {
-      logoAnimation_instance.destroy()
-      logoAnimation_instance = null
-    }
+  } else if (logoAnimation_instance) {
+    logoAnimation_instance.destroy()
+    logoAnimation_instance = null
   }
 })
 </script>
@@ -200,43 +224,72 @@ watch(visible, (newVal) => {
     <div class="auth-dialog-content">
       <div v-if="viewState === 'login'">
         <el-tabs v-model="activeTab" class="login-tabs">
+          <el-tab-pane :label="t('auth.phoneLogin')" name="phone">
+            <PhoneLoginForm
+              @login-with-code="handlePhoneLogin"
+              @send-code="handleGetPhoneCode"
+              :loading="phoneLoginLoading"
+            />
+          </el-tab-pane>
           <el-tab-pane :label="t('auth.passwordLogin')" name="password">
             <LoginForm @login="handleLogin" :loading="passwordLoginLoading" />
           </el-tab-pane>
           <el-tab-pane :label="t('auth.codeLogin')" name="code">
-            <CodeLoginForm 
-              @login-with-code="handleCodeLogin" 
+            <CodeLoginForm
+              @login-with-code="handleCodeLogin"
               @send-code="handleGetLoginCode"
-              :loading="codeLoginLoading" 
+              :loading="codeLoginLoading"
+            />
+          </el-tab-pane>
+          <el-tab-pane :label="t('auth.wechatLogin')" name="wechat">
+            <WeChatLoginPanel
+              :bind-loading="wechatBindLoading"
+              @login-success="handleWechatLoginSuccess"
+              @bind-phone="handleWechatBindPhone"
+              @send-bind-code="handleGetPhoneCode"
             />
           </el-tab-pane>
         </el-tabs>
-        <div class="extra-actions">
-          <el-link type="primary" :underline="false" style="font-size: 12px;" @click="viewState = 'forgotPassword'">
+        <div v-if="activeTab !== 'wechat'" class="extra-actions">
+          <el-link
+            v-if="activeTab === 'password'"
+            type="primary"
+            :underline="false"
+            style="font-size: 12px;"
+            @click="viewState = 'forgotPassword'"
+          >
             {{ t('auth.forgotPassword') }}
           </el-link>
         </div>
       </div>
-      
-      <RegisterForm 
-        v-else-if="viewState === 'register'" 
-        @register="handleRegister" 
-        @send-code="handleGetLoginCode" 
+
+      <RegisterForm
+        v-else-if="viewState === 'register'"
+        @register="handleRegister"
+        @send-code="handleGetLoginCode"
         :loading="registerLoading"
       />
-      <ForgotPasswordForm 
-        v-else-if="viewState === 'forgotPassword'" 
-        @reset-password="handlePasswordReset" 
+      <PhoneRegisterForm
+        v-else-if="viewState === 'phoneRegister'"
+        @register="handlePhoneRegister"
+        @send-code="handleGetPhoneCode"
+        :loading="phoneRegisterLoading"
+      />
+      <ForgotPasswordForm
+        v-else-if="viewState === 'forgotPassword'"
+        @reset-password="handlePasswordReset"
         @send-code="handleGetLoginCode"
-        :loading="forgotPasswordLoading" 
+        :loading="forgotPasswordLoading"
       />
 
       <div class="auth-toggle">
         <span v-if="viewState === 'login'">
-          {{ t('auth.noAccount') }} <el-link type="primary" @click="viewState = 'register'">{{ t('auth.registerNow') }}</el-link>
+          {{ t('auth.noAccount') }}
+          <el-link type="primary" @click="goRegister">{{ t('auth.registerNow') }}</el-link>
         </span>
-        <span v-if="viewState === 'register'">
-          {{ t('auth.hasAccount') }} <el-link type="primary" @click="viewState = 'login'">{{ t('auth.loginNow') }}</el-link>
+        <span v-if="viewState === 'register' || viewState === 'phoneRegister'">
+          {{ t('auth.hasAccount') }}
+          <el-link type="primary" @click="viewState = 'login'">{{ t('auth.loginNow') }}</el-link>
         </span>
         <span v-if="viewState === 'forgotPassword'">
           <el-link type="primary" @click="viewState = 'login'">{{ t('auth.backToLogin') }}</el-link>
@@ -290,24 +343,13 @@ watch(visible, (newVal) => {
   :deep(.el-tabs__item) {
     flex: 1;
     text-align: center;
-    font-size: 16px;
+    font-size: 14px;
+    padding: 0 4px;
   }
 }
 
-.auth-actions {
-  margin: 16px 0;
-  width: 100%;
-  text-align: right;
-}
-
-.login-actions {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-}
-
 .extra-actions {
-  margin-top: 0px;
+  margin-top: 0;
   text-align: right;
   width: 100%;
 }
@@ -323,4 +365,4 @@ watch(visible, (newVal) => {
   font-size: 14px;
   vertical-align: baseline;
 }
-</style> 
+</style>

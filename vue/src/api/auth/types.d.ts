@@ -48,3 +48,49 @@ export namespace ForgotPasswordApi {
     }
 }
 
+export namespace PhoneVerificationCodeApi {
+    export interface Params {
+        phone: string
+    }
+}
+
+export namespace PhoneLoginApi {
+    export interface Params {
+        phone: string
+        code: string
+    }
+}
+
+export namespace PhoneRegisterApi {
+    export interface Params {
+        phone: string
+        code: string
+        password?: string
+        nickname?: string
+    }
+}
+
+export namespace WechatBindPhoneApi {
+    export interface Params {
+        bindTicket: string
+        phone: string
+        code: string
+    }
+}
+
+export namespace WechatLoginStateApi {
+    export interface Response {
+        state: string
+        appId: string
+        redirectUri: string
+    }
+}
+
+export namespace WechatPollApi {
+    export interface Response {
+        status: 'pending' | 'success' | 'need_bind'
+        token?: string
+        bindTicket?: string
+    }
+}
+

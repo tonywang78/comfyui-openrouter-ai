@@ -35,6 +35,8 @@ public class WebSocketStatisticsScheduler {
     @Scheduled(fixedRate = 30000)
     public void updateWebSocketStats() {
         try {
+            webSocketHandler.pruneStaleSessions();
+
             // 获取在线用户数
             int onlineUsers = webSocketHandler.getConnectedUserCount();
 

@@ -26,6 +26,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 @SuppressWarnings("all")
 public class TaskProgressWebSocketHandler implements WebSocketHandler {
+
+    /** 单用户最大连接数（多标签页场景），超出时关闭最旧的连接 */
+    private static final int MAX_CONNECTIONS_PER_USER = 5;
     
     /**
      * 用户连接管理 userId -> Set<WebSocketSession>
@@ -59,10 +62,10 @@ public class TaskProgressWebSocketHandler implements WebSocketHandler {
             // 将用户ID存储到session属性中
             session.getAttributes().put("userId", userId);
             
-            // 添加到用户连接管理
-            userSessions.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet()).add(session);
+            registerSession(userId, session);
             
-            log.info("用户 {} WebSocket连接建立成功，当前连接数: {}", userId, userSessions.get(userId).size());
+            Set<WebSocketSession> sessions = userSessions.get(userId);
+            log.info("用户 {} WebSocket连接建立成功，当前连接数: {}", userId, sessions.size());
             
             // 发送连接确认消息
             session.sendMessage(new TextMessage(JSON.toJSONString(
@@ -193,6 +196,49 @@ public class TaskProgressWebSocketHandler implements WebSocketHandler {
         return userSessions.values().stream().mapToInt(Set::size).sum();
     }
     
+    /**
+     * 清理所有用户的失效连接（已关闭但未触发 cleanup 的 session）
+     */
+    public void pruneStaleSessions() {
+        userSessions.forEach((userId, sessions) -> {
+            int before = sessions.size();
+            pruneUserSessions(sessions);
+            int removed = before - sessions.size();
+            if (removed > 0) {
+                log.info("清理用户 {} 的 {} 条失效 WebSocket 连接", userId, removed);
+            }
+            if (sessions.isEmpty()) {
+                userSessions.remove(userId);
+            }
+        });
+    }
+    
+    private void registerSession(Long userId, WebSocketSession session) {
+        Set<WebSocketSession> sessions = userSessions.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet());
+        pruneUserSessions(sessions);
+        while (sessions.size() >= MAX_CONNECTIONS_PER_USER) {
+            WebSocketSession oldest = sessions.iterator().next();
+            sessions.remove(oldest);
+            closeSessionQuietly(oldest, "超出单用户连接上限");
+            log.warn("用户 {} WebSocket 连接数超限，关闭旧连接", userId);
+        }
+        sessions.add(session);
+    }
+
+    private void pruneUserSessions(Set<WebSocketSession> sessions) {
+        sessions.removeIf(session -> !session.isOpen());
+    }
+
+    private void closeSessionQuietly(WebSocketSession session, String reason) {
+        try {
+            if (session.isOpen()) {
+                session.close(CloseStatus.NORMAL.withReason(reason));
+            }
+        } catch (Exception e) {
+            log.debug("关闭 WebSocket 连接时发生异常: {}", e.getMessage());
+        }
+    }
+
     /**
      * 从session中获取token
      */

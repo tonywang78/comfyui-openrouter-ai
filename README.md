@@ -44,7 +44,7 @@
 </p>
 
 ### 功能特性
-- **账号与鉴权**: 基于 Sa-Token，Bearer Token 方式，内置接口访问过滤与路由过滤。
+- **账号与鉴权**: 基于 Sa-Token，Bearer Token 方式；支持邮箱登录、手机号验证码登录、微信扫码登录（手机号为主账号标识），内置接口访问过滤与路由过滤。
 - **聊天与AI能力**: 整合 OpenRouter，多模型注册与自动选择；SSE 流式对话，支持多语言与富文本高亮；(主要是这玩意有免费的API模型服务具体详见yml配置和具体后端文档)。
 - **ComfyUI 工作流**: 表单化参数收集、任务提交与状态订阅、任务超时与重试策略、文件类型白名单、支持配置多个Comfyui服务、(提交任务、取消任务、重新制作)。
 - **对象存储**: 阿里云 OSS 上传与回显、全局文件类型与大小限制配置。
@@ -96,10 +96,13 @@ vue/                     # 前端工程（Vite）
    - `spring.datasource.url/username/password`（MySQL）
    - `spring.data.redis.host/port/password`（Redis）
    - `spring.mail.*`（可选，邮件验证码/通知）
+   - `ali.sms.*`（手机号验证码，阿里云短信签名与模板）
+   - `wechat.open-platform.*`（微信扫码登录，开放平台网站应用）
    - `ali.oss.*`（阿里云 OSS）
    - `comfyui.server[*].url`（ComfyUI 服务地址）
    - `open-router.api-key`（OpenRouter API Key）
-2. 启动（开发模式）：
+2. 若数据库已存在，执行迁移脚本 `singleton/.sql/migration/V20260629_add_phone_wechat.sql` 以添加手机号/微信字段。
+3. 启动（开发模式）：
    ```bash
    mvn -f singleton/pom.xml -pl application -am spring-boot:run -Pdev
    ```
@@ -146,10 +149,19 @@ admin:
     nickname: 系统管理员 # 管理员昵称
     initial-credits: 1000000 # 初始积分
 
+wechat:
+  open-platform:
+    app-id: "<your_wechat_app_id>" # 微信开放平台网站应用 AppID
+    app-secret: "<your_wechat_app_secret>" # AppSecret
+    redirect-uri: "https://your-domain.com/api/auth/wechat/callback" # 授权回调（须与开放平台配置一致）
+
 ali:
   certified:
     access-key: "<your_ali_access_key>" # 阿里云 AK
     secret-key: "<your_ali_secret_key>" # 阿里云 SK
+  sms:
+    sign-name: "<your_sms_sign_name>" # 短信签名
+    template-code: "SMS_xxxx" # 短信模板（变量 code）
   oss:
     endpoint: "oss-accelerate.aliyuncs.com" # OSS 访问端点
     bucket-name: "<your_bucket_name>" # OSS 桶名
