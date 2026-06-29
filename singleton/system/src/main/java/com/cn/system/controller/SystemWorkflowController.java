@@ -49,6 +49,23 @@ public class SystemWorkflowController {
     }
 
     /**
+     * 获取工作流详情（编辑回填）
+     */
+    @GetMapping(value = "/detail", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Result getWorkflowDetail(@RequestParam @NotNull Long workflowId) {
+        return Result.data(systemWorkflowService.getWorkflowDetail(workflowId));
+    }
+
+    /**
+     * 更新工作流完整配置
+     */
+    @PostMapping(value = "/update-config", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Result updateWorkflowConfig(@Valid @RequestBody UpdateWorkflowConfigDto dto) {
+        systemWorkflowService.updateWorkflowConfig(dto);
+        return Result.ok("工作流配置更新成功");
+    }
+
+    /**
      * 获取工作流分页列表（包含类别信息）
      */
     @GetMapping(value = "/page", produces = MediaType.APPLICATION_JSON_VALUE)

@@ -1,6 +1,8 @@
 import type {
   ParsingWorkflowVo,
   SaveWorkflowConfigDto,
+  UpdateWorkflowConfigDto,
+  WorkflowDetailVo,
   WorkflowPageVo,
   UpdateWorkflowDto,
   DeleteWorkflowDto,
@@ -21,6 +23,14 @@ export const workflowApi = {
 
   saveWorkflowConfig: (payload: SaveWorkflowConfigDto) => {
     return post<void>('/system/workflow/save', payload)
+  },
+
+  getWorkflowDetail: (workflowId: number) => {
+    return get<WorkflowDetailVo>('/system/workflow/detail', { workflowId })
+  },
+
+  updateWorkflowConfig: (payload: UpdateWorkflowConfigDto) => {
+    return post<void>('/system/workflow/update-config', payload)
   },
 
   // Page list

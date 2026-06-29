@@ -56,7 +56,7 @@
             <el-table-column prop="creditsDeducted" :label="t('system.workflow.table.credits')" width="110" />
             <el-table-column :label="t('system.workflow.table.actions')" width="200" fixed="right">
               <template #default="{ row }">
-                <el-button link type="primary" @click="openEditDialog(row)">{{ t('system.workflow.table.edit') }}</el-button>
+                <el-button link type="primary" :loading="loadingDetailId === row.workflowId" @click="openEditDialog(row)">{{ t('system.workflow.table.edit') }}</el-button>
                 <el-button link type="danger" @click="confirmDelete(row)">{{ t('system.workflow.table.delete') }}</el-button>
               </template>
             </el-table-column>
@@ -78,7 +78,7 @@
       </div>
     </el-card>
     <!-- 新建工作流对话框 -->
-    <el-dialog v-model="createDialogVisible" :title="t('system.workflow.dialog.createTitle')" width="880px" class="workflow-dialog" @close="resetAll">
+    <el-dialog v-model="createDialogVisible" :title="dialogMode === 'edit' ? t('system.workflow.dialog.editTitle') : t('system.workflow.dialog.createTitle')" width="880px" class="workflow-dialog" @close="resetAll">
       <div class="dialog-content">
         <!-- 基本信息 -->
         <el-card shadow="never" class="section-card">
@@ -121,7 +121,7 @@
           <div class="parse-row">
             <input ref="jsonFileRef" type="file" accept="application/json,.json" @change="onWorkflowFileChange" v-show="false" />
             <el-button class="secondary-btn" :loading="parsing" @click="triggerChooseFile">{{ t('system.workflow.dialog.chooseFile') }}</el-button>
-            <el-text type="info" v-if="parseResult.json">{{ t('system.workflow.dialog.parsed') }}</el-text>
+            <el-text type="info" v-if="parseResult.json">{{ dialogMode === 'edit' ? t('system.workflow.dialog.loaded') : t('system.workflow.dialog.parsed') }}</el-text>
           </div>
           <div class="parse-summary" v-if="parseResult.formNodeList.length || parseResult.allNodeList.length">
             <el-alert type="success" show-icon :closable="false">
@@ -185,24 +185,6 @@
       </template>
     </el-dialog>
 
-    <!-- 编辑工作流对话框 -->
-    <el-dialog v-model="editDialogVisible" :title="t('system.workflow.dialog.editTitle')" width="520px" class="workflow-edit-dialog" @close="onEditDialogClose">
-      <el-form ref="editFormRef" :model="editForm" :rules="editFormRules" label-width="100px">
-        <el-form-item :label="t('system.workflow.dialog.name')" prop="name">
-          <el-input v-model="editForm.name" />
-        </el-form-item>
-        <el-form-item :label="t('system.workflow.dialog.category')" prop="workflowCategoryId">
-          <el-select v-model="editForm.workflowCategoryId" :placeholder="t('system.workflow.dialog.categoryPlaceholder')" style="width: 260px">
-            <el-option v-for="c in categoryList" :key="c.categoryId" :label="c.name" :value="c.categoryId" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button class="cancel-btn" @click="editDialogVisible = false">{{ t('system.workflow.dialog.cancel') }}</el-button>
-        <el-button type="primary" :loading="updating" @click="submitUpdate">{{ t('system.workflow.dialog.save') }}</el-button>
-      </template>
-    </el-dialog>
-
     <!-- 类别管理对话框 -->
     <el-dialog v-model="categoryDialogVisible" :title="t('system.workflow.dialog.categoryTitle')" width="620px" class="workflow-category-dialog">
       <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
@@ -245,7 +227,7 @@ import { Plus, Search, RefreshRight } from '@element-plus/icons-vue';
 import { ElNotification, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { workflowApi } from '@/api/system-workflow/system-workflow'
-import type { ParsingWorkflowVo, FormNodeConfig, OutputNodeConfig, WorkflowListItem } from '@/api/system-workflow/types'
+import type { ParsingWorkflowVo, FormNodeConfig, OutputNodeConfig, WorkflowListItem, WorkflowDetailVo } from '@/api/system-workflow/types'
 import { ossApi } from '@/api/oss/oss'
 import { WorkflowFormTypeEnum, WorkflowResultModelTypeEnum, WorkflowResultModelDigitalEnum } from '@/enums/workflow'
 import { useI18n } from 'vue-i18n'
@@ -253,13 +235,14 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 
 const createDialogVisible = ref(false)
+const dialogMode = ref<'create' | 'edit'>('create')
+const editingWorkflowId = ref<number | null>(null)
+const loadingDetailId = ref<number | null>(null)
 const parsing = ref(false)
 const saving = ref(false)
-const updating = ref(false)
 
 const jsonFileRef = ref<HTMLInputElement | null>(null)
 const createFormRef = ref<FormInstance>()
-const editFormRef = ref<FormInstance>()
 
 const baseForm = reactive({
   name: '',
@@ -313,6 +296,8 @@ const outputTypeLabelMap = computed(() => ({
 
 const openCreateDialog = () => {
   resetAll()
+  dialogMode.value = 'create'
+  editingWorkflowId.value = null
   createDialogVisible.value = true
 }
 
@@ -372,50 +357,94 @@ onMounted(() => {
 })
 
 // ---------- 编辑、删除 ----------
-const editDialogVisible = ref(false)
-const editForm = reactive<{ workflowId: number | null; name: string; workflowCategoryId: number | null }>({ workflowId: null, name: '', workflowCategoryId: null })
+type SavedFormNode = WorkflowDetailVo['savedFormNodeList'][number]
 
-// 编辑工作流表单验证规则
-const editFormRules = computed<FormRules>(() => ({
-  name: [
-    { required: true, message: t('system.workflow.validation.nameRequired'), trigger: 'blur' },
-    { min: 1, max: 100, message: t('system.workflow.validation.nameLength'), trigger: 'blur' }
-  ],
-  workflowCategoryId: [
-    { required: true, message: t('system.workflow.validation.categoryRequired'), trigger: 'change' }
-  ]
-}))
+const mapParseNodeToDefaultConfig = (
+  n: ParsingWorkflowVo['formNodeList'][number],
+  enabled = true
+): ConfigFormNode => ({
+  nodeKey: n.nodeKey,
+  type: n.type === WorkflowFormTypeEnum.TEXT_CONFIGURABLE
+    ? WorkflowFormTypeEnum.TEXT_PROMPT
+    : n.type === WorkflowFormTypeEnum.IMAGE_CONFIGURABLE
+    ? WorkflowFormTypeEnum.IMAGE_UPLOAD
+    : (n.type as WorkflowFormTypeEnum),
+  inputs: n.nodeDigital as WorkflowResultModelDigitalEnum,
+  tips: n.tips || '',
+  required: true,
+  size: n.type === WorkflowFormTypeEnum.IMAGE_UPLOAD
+    || n.type === WorkflowFormTypeEnum.IMAGE_CONFIGURABLE
+    || n.type === WorkflowFormTypeEnum.IMAGE_SCRIBBLE
+    || n.type === WorkflowFormTypeEnum.VIDEO_UPLOAD
+    || n.type === WorkflowFormTypeEnum.AUDIO_UPLOAD ? 10 : 500,
+  template: '',
+  options: n.type === WorkflowFormTypeEnum.TEXT_CONFIGURABLE ? '' : undefined,
+  enabled
+})
 
-const openEditDialog = (row: { workflowId: number; name: string; categoryName: string }) => {
-  editForm.workflowId = row.workflowId
-  editForm.name = row.name
-  // 默认选择第一个类别
-  editForm.workflowCategoryId = categoryList.value[0]?.categoryId ?? null
-  editDialogVisible.value = true
+const mapSavedNodeToConfig = (saved: SavedFormNode): ConfigFormNode => ({
+  nodeKey: saved.nodeKey,
+  type: saved.type as WorkflowFormTypeEnum,
+  inputs: saved.inputs as WorkflowResultModelDigitalEnum,
+  tips: saved.tips || '',
+  options: saved.options,
+  template: saved.template || '',
+  required: saved.required === 1,
+  size: saved.size,
+  enabled: true
+})
+
+const applyParsedWorkflow = (data: ParsingWorkflowVo, savedMap?: Map<string, SavedFormNode>) => {
+  parseResult.json = data.json
+  parseResult.allNodeList = data.allNodeList
+  parseResult.formNodeList = data.formNodeList
+
+  const parsedKeys = new Set(data.formNodeList.map(n => n.nodeKey))
+  configFormNodes.value = data.formNodeList.map(n => {
+    const saved = savedMap?.get(n.nodeKey)
+    return saved ? mapSavedNodeToConfig(saved) : mapParseNodeToDefaultConfig(n, false)
+  })
+
+  if (savedMap) {
+    for (const saved of savedMap.values()) {
+      if (!parsedKeys.has(saved.nodeKey)) {
+        configFormNodes.value.push(mapSavedNodeToConfig(saved))
+      }
+    }
+  }
 }
 
-const submitUpdate = async () => {
-  if (!editFormRef.value) return
-  await editFormRef.value.validate(async (valid) => {
-    if (!valid) return
-    if (!editForm.workflowId) return
-    
-    try {
-      updating.value = true
-      await workflowApi.updateWorkflow({
-        workflowId: editForm.workflowId,
-        name: editForm.name,
-        workflowCategoryId: editForm.workflowCategoryId!
-      })
-      ElNotification.success(t('system.workflow.messages.updateSuccess'))
-      editDialogVisible.value = false
-      loadPage()
-    } catch (e) {
-      console.error(e)
-    } finally {
-      updating.value = false
-    }
-  })
+const openEditDialog = async (row: WorkflowListItem) => {
+  try {
+    loadingDetailId.value = row.workflowId
+    const detail = await workflowApi.getWorkflowDetail(row.workflowId)
+    resetAll()
+    dialogMode.value = 'edit'
+    editingWorkflowId.value = row.workflowId
+
+    baseForm.name = detail.name
+    baseForm.description = detail.description || ''
+    baseForm.url = detail.url || ''
+    baseForm.workflowCategoryId = detail.workflowCategoryId != null ? String(detail.workflowCategoryId) : ''
+    baseForm.creditsDeducted = detail.creditsDeducted
+
+    const savedMap = new Map(detail.savedFormNodeList.map(item => [item.nodeKey, item]))
+    applyParsedWorkflow(
+      {
+        json: detail.json,
+        allNodeList: detail.allNodeList,
+        formNodeList: detail.formNodeList
+      },
+      savedMap
+    )
+    outputNodes.value = detail.outputNodeList.map(item => ({ ...item }))
+    createDialogVisible.value = true
+  } catch (e) {
+    console.error(e)
+    ElNotification.error(t('system.workflow.messages.loadDetailFailed'))
+  } finally {
+    loadingDetailId.value = null
+  }
 }
 
 const confirmDelete = async (row: { workflowId: number; name: string }) => {
@@ -528,29 +557,7 @@ const onWorkflowFileChange = async (e: Event) => {
   try {
     parsing.value = true
     const data = await workflowApi.parseWorkflow(file)
-    parseResult.json = data.json
-    parseResult.allNodeList = data.allNodeList
-    parseResult.formNodeList = data.formNodeList
-    // 初始化可编辑表单配置
-    configFormNodes.value = data.formNodeList.map(n => ({
-      nodeKey: n.nodeKey,
-      type: n.type === WorkflowFormTypeEnum.TEXT_CONFIGURABLE 
-        ? WorkflowFormTypeEnum.TEXT_PROMPT 
-        : n.type === WorkflowFormTypeEnum.IMAGE_CONFIGURABLE 
-        ? WorkflowFormTypeEnum.IMAGE_UPLOAD 
-        : (n.type as any),
-      inputs: n.nodeDigital as WorkflowResultModelDigitalEnum,
-      tips: n.tips || '',
-      required: true,
-      size: n.type === WorkflowFormTypeEnum.IMAGE_UPLOAD 
-        || n.type === WorkflowFormTypeEnum.IMAGE_CONFIGURABLE 
-        || n.type === WorkflowFormTypeEnum.IMAGE_SCRIBBLE 
-        || n.type === WorkflowFormTypeEnum.VIDEO_UPLOAD 
-        || n.type === WorkflowFormTypeEnum.AUDIO_UPLOAD ? 10 : 500,
-      template: '',
-      options: n.type === WorkflowFormTypeEnum.TEXT_CONFIGURABLE ? '' : undefined,
-      enabled: true
-    }))
+    applyParsedWorkflow(data)
     ElNotification.success(t('system.workflow.dialog.parseSuccess'))
   } catch (err: any) {
     console.error(err)
@@ -643,8 +650,16 @@ const handleSave = async () => {
 
   try {
     saving.value = true
-    await workflowApi.saveWorkflowConfig(payload)
-    ElNotification.success(t('system.workflow.messages.saveSuccess'))
+    if (dialogMode.value === 'edit' && editingWorkflowId.value != null) {
+      await workflowApi.updateWorkflowConfig({
+        ...payload,
+        workflowId: editingWorkflowId.value
+      })
+      ElNotification.success(t('system.workflow.messages.updateSuccess'))
+    } else {
+      await workflowApi.saveWorkflowConfig(payload)
+      ElNotification.success(t('system.workflow.messages.saveSuccess'))
+    }
     createDialogVisible.value = false
     await loadPage()
   } catch (err: any) {
@@ -665,6 +680,8 @@ const handleCoverUpload = async (req: any) => {
 }
 
 const resetAll = () => {
+  dialogMode.value = 'create'
+  editingWorkflowId.value = null
   baseForm.name = ''
   baseForm.description = ''
   baseForm.url = ''
@@ -676,11 +693,6 @@ const resetAll = () => {
   configFormNodes.value = []
   outputNodes.value = []
   createFormRef.value?.clearValidate()
-}
-
-// 编辑对话框关闭时清除验证
-const onEditDialogClose = () => {
-  editFormRef.value?.clearValidate()
 }
 </script>
 

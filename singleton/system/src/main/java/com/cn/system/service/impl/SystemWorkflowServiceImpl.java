@@ -22,6 +22,7 @@ import com.cn.system.service.SystemWorkflowService;
 import com.cn.system.vo.ParsingWorkflowVo;
 import com.cn.system.vo.SystemWorkflowPageItemVo;
 import com.cn.system.vo.SystemWorkflowCategoryVo;
+import com.cn.system.vo.WorkflowDetailVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -77,24 +78,7 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
                 stringBuilder.append(line);
             }
             String jsonString = stringBuilder.toString();
-
-            // 3. 解析 JSON
-            JSONObject jsonObject = JSON.parseObject(jsonString);
-            if (jsonObject == null || jsonObject.isEmpty()) {
-                throw new UniversalException("JSON 文件内容为空或格式不正确");
-            }
-
-            // 4. 提取所有节点的基础信息
-            List<ParsingWorkflowVo.AllNode> allNodeList = extractAllNodes(jsonObject);
-
-            // 5. 识别可用于表单输入的节点
-            List<ParsingWorkflowVo.FormNode> formNodeList = extractFormNodes(jsonObject);
-
-            // 6. 构建返回结果
-            return new ParsingWorkflowVo()
-                    .setJson(jsonObject.toJSONString())
-                    .setAllNodeList(allNodeList)
-                    .setFormNodeList(formNodeList);
+            return parseJsonContent(jsonString);
 
         } catch (UniversalException e) {
             throw e;
@@ -102,6 +86,21 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
             log.error("解析工作流 JSON 文件失败: {}", fileName, e);
             throw new UniversalException("无法正确解析该 JSON 文件内容：" + e.getMessage());
         }
+    }
+
+    private ParsingWorkflowVo parseJsonContent(String jsonString) {
+        JSONObject jsonObject = JSON.parseObject(jsonString);
+        if (jsonObject == null || jsonObject.isEmpty()) {
+            throw new UniversalException("JSON 文件内容为空或格式不正确");
+        }
+
+        List<ParsingWorkflowVo.AllNode> allNodeList = extractAllNodes(jsonObject);
+        List<ParsingWorkflowVo.FormNode> formNodeList = extractFormNodes(jsonObject);
+
+        return new ParsingWorkflowVo()
+                .setJson(jsonObject.toJSONString())
+                .setAllNodeList(allNodeList)
+                .setFormNodeList(formNodeList);
     }
 
     /**
@@ -310,35 +309,125 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
         workflowMapper.insert(workflow);
         Long workflowId = workflow.getId();
 
-        // 3. 批量保存表单节点配置
-        List<WorkflowForm> formList = dto.getFormNodeList().stream()
+        persistFormAndOutputNodes(workflowId, dto.getFormNodeList(), dto.getOutputNodeList());
+
+        log.info("成功保存工作流配置，workflowId: {}, 输入节点数: {}, 输出节点数: {}",
+                workflowId, dto.getFormNodeList().size(), dto.getOutputNodeList().size());
+    }
+
+    @Override
+    public WorkflowDetailVo getWorkflowDetail(final Long workflowId) {
+        Workflow workflow = workflowMapper.selectById(workflowId);
+        if (workflow == null) {
+            throw new UniversalException("工作流不存在");
+        }
+        if (!StringUtils.hasText(workflow.getJson())) {
+            throw new UniversalException("工作流 JSON 为空，无法编辑");
+        }
+
+        ParsingWorkflowVo parsed = parseJsonContent(workflow.getJson());
+
+        List<WorkflowForm> forms = workflowFormMapper.selectList(new QueryWrapper<WorkflowForm>().lambda()
+                .eq(WorkflowForm::getWorkflowId, workflowId));
+        List<WorkflowOutput> outputs = workflowOutputMapper.selectList(new QueryWrapper<WorkflowOutput>().lambda()
+                .eq(WorkflowOutput::getWorkflowId, workflowId));
+
+        List<WorkflowDetailVo.SavedFormNode> savedFormNodes = forms.stream()
+                .map(f -> new WorkflowDetailVo.SavedFormNode()
+                        .setNodeKey(f.getNodeKey())
+                        .setType(f.getType())
+                        .setInputs(f.getInputs())
+                        .setTips(f.getTips())
+                        .setOptions(f.getOptions())
+                        .setTemplate(f.getTemplate())
+                        .setRequired(f.getRequired())
+                        .setSize(f.getSize()))
+                .collect(Collectors.toList());
+
+        List<WorkflowDetailVo.SavedOutputNode> savedOutputNodes = outputs.stream()
+                .map(o -> new WorkflowDetailVo.SavedOutputNode()
+                        .setNodeKey(o.getNodeKey())
+                        .setType(o.getType()))
+                .collect(Collectors.toList());
+
+        Long categoryId = null;
+        if (StringUtils.hasText(workflow.getWorkflowCategoryId())) {
+            try {
+                categoryId = Long.parseLong(workflow.getWorkflowCategoryId());
+            } catch (NumberFormatException ignored) {
+                // 保持 null
+            }
+        }
+
+        return new WorkflowDetailVo()
+                .setWorkflowId(workflow.getId())
+                .setName(workflow.getName())
+                .setDescription(workflow.getDescription())
+                .setUrl(uploadUtil.toSignedUrl(workflow.getUrl()))
+                .setJson(parsed.getJson())
+                .setWorkflowCategoryId(categoryId)
+                .setCreditsDeducted(workflow.getCreditsDeducted())
+                .setAllNodeList(parsed.getAllNodeList())
+                .setFormNodeList(parsed.getFormNodeList())
+                .setSavedFormNodeList(savedFormNodes)
+                .setOutputNodeList(savedOutputNodes);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateWorkflowConfig(final UpdateWorkflowConfigDto dto) {
+        Workflow workflow = workflowMapper.selectById(dto.getWorkflowId());
+        if (workflow == null) {
+            throw new UniversalException("工作流不存在");
+        }
+
+        validateFormNodeConfigs(dto.getFormNodeList());
+
+        workflow.setName(dto.getName())
+                .setDescription(dto.getDescription())
+                .setUrl(normalizeOssStorageValue(dto.getUrl()))
+                .setJson(dto.getJson())
+                .setWorkflowCategoryId(dto.getWorkflowCategoryId())
+                .setCreditsDeducted(dto.getCreditsDeducted());
+        workflowMapper.updateById(workflow);
+
+        workflowFormMapper.delete(new QueryWrapper<WorkflowForm>().lambda()
+                .eq(WorkflowForm::getWorkflowId, dto.getWorkflowId()));
+        workflowOutputMapper.delete(new QueryWrapper<WorkflowOutput>().lambda()
+                .eq(WorkflowOutput::getWorkflowId, dto.getWorkflowId()));
+
+        persistFormAndOutputNodes(dto.getWorkflowId(), dto.getFormNodeList(), dto.getOutputNodeList());
+
+        log.info("成功更新工作流配置，workflowId: {}, 输入节点数: {}, 输出节点数: {}",
+                dto.getWorkflowId(), dto.getFormNodeList().size(), dto.getOutputNodeList().size());
+    }
+
+    private void persistFormAndOutputNodes(Long workflowId,
+                                           List<SaveWorkflowConfigDto.FormNodeConfig> formNodeList,
+                                           List<SaveWorkflowConfigDto.OutputNodeConfig> outputNodeList) {
+        List<WorkflowForm> formList = formNodeList.stream()
                 .map(input -> new WorkflowForm()
                         .setWorkflowId(workflowId)
                         .setNodeKey(input.getNodeKey())
                         .setType(input.getType())
                         .setInputs(input.getInputs())
                         .setTips(input.getTips())
-                        // MySQL JSON 列不接受空字符串，空则置为 NULL
                         .setOptions(StringUtils.hasText(input.getOptions()) ? input.getOptions() : null)
                         .setTemplate(input.getTemplate())
                         .setRequired(Boolean.TRUE.equals(input.getRequired()) ? RequiredEnum.TRUE.getDec() : RequiredEnum.FALSE.getDec())
                         .setSize(input.getSize()))
                 .toList();
-        
+
         formList.forEach(workflowFormMapper::insert);
 
-        // 4. 批量保存输出节点配置
-        List<WorkflowOutput> outputList = dto.getOutputNodeList().stream()
+        List<WorkflowOutput> outputList = outputNodeList.stream()
                 .map(output -> new WorkflowOutput()
                         .setWorkflowId(workflowId)
                         .setNodeKey(output.getNodeKey())
                         .setType(output.getType()))
                 .toList();
-        
-        outputList.forEach(workflowOutputMapper::insert);
 
-        log.info("成功保存工作流配置，workflowId: {}, 输入节点数: {}, 输出节点数: {}", 
-                workflowId, formList.size(), outputList.size());
+        outputList.forEach(workflowOutputMapper::insert);
     }
 
     @Override
@@ -371,6 +460,7 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
                         .setDescription(w.getDescription())
                         .setUrl(uploadUtil.toSignedUrl(w.getUrl()))
                         .setCategoryName(catNameMap.getOrDefault(w.getWorkflowCategoryId(), null))
+                        .setWorkflowCategoryId(parseCategoryId(w.getWorkflowCategoryId()))
                         .setCreditsDeducted(w.getCreditsDeducted()))
                 .collect(Collectors.toList());
 
@@ -445,6 +535,17 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
                         .setCategoryId(c.getId())
                         .setName(c.getName()))
                 .collect(Collectors.toList());
+    }
+
+    private Long parseCategoryId(String workflowCategoryId) {
+        if (!StringUtils.hasText(workflowCategoryId)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(workflowCategoryId);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private String normalizeOssStorageValue(String urlOrKey) {

@@ -24,6 +24,8 @@ public class SystemWorkflowPageItemVo {
 
     private String categoryName;
 
+    private Long workflowCategoryId;
+
     private Long creditsDeducted;
 }
 

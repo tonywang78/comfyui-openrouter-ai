@@ -34,6 +34,33 @@ export interface SaveWorkflowConfigDto {
   outputNodeList: OutputNodeConfig[]
 }
 
+export interface UpdateWorkflowConfigDto extends SaveWorkflowConfigDto {
+  workflowId: number
+}
+
+export interface WorkflowDetailVo {
+  workflowId: number
+  name: string
+  description?: string
+  url?: string
+  json: string
+  workflowCategoryId?: number
+  creditsDeducted: number
+  allNodeList: ParsingWorkflowVo['allNodeList']
+  formNodeList: ParsingWorkflowVo['formNodeList']
+  savedFormNodeList: {
+    nodeKey: string
+    type: FormType
+    inputs: string
+    tips: string
+    options?: string
+    template?: string
+    required: 0 | 1
+    size?: number
+  }[]
+  outputNodeList: OutputNodeConfig[]
+}
+
 export interface FormNodeConfig {
   nodeKey: string
   type: WorkflowFormTypeEnum
@@ -56,6 +83,7 @@ export interface WorkflowListItem {
   name: string
   description?: string
   categoryName: string
+  workflowCategoryId?: number
   creditsDeducted: number
   url?: string
 }

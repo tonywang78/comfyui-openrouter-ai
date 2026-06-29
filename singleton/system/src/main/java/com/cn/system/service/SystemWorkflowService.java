@@ -5,6 +5,7 @@ import com.cn.system.dto.*;
 import com.cn.system.vo.ParsingWorkflowVo;
 import com.cn.system.vo.SystemWorkflowPageItemVo;
 import com.cn.system.vo.SystemWorkflowCategoryVo;
+import com.cn.system.vo.WorkflowDetailVo;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -30,6 +31,16 @@ public interface SystemWorkflowService {
      * @param dto 工作流配置数据
      */
     void saveWorkflowConfig(SaveWorkflowConfigDto dto);
+
+    /**
+     * 获取工作流详情（编辑回填）
+     */
+    WorkflowDetailVo getWorkflowDetail(Long workflowId);
+
+    /**
+     * 更新工作流完整配置
+     */
+    void updateWorkflowConfig(UpdateWorkflowConfigDto dto);
 
     /**
      * 分页查询工作流
