@@ -45,8 +45,7 @@ const menuSections = computed<MenuSection[]>(() => [
         id: 'comfyui', 
         title: t('layouts.sidebar.menu.onlineGeneration'), 
         route: '/comfyui', 
-        icon: CreativeIcon, 
-        description: t('layouts.sidebar.menu.onlineGenerationDesc')
+        icon: CreativeIcon
       },
       { 
         id: 'works', 
