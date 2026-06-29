@@ -104,10 +104,10 @@ comfyui:
     mp3: "audio/mpeg"
     wav: "audio/x-wav"
 
-# OpenRouter 配置
+# OpenRouter / OpenAI 兼容 LLM 配置
 open-router:
-  api-key: "${OPENROUTER_API_KEY:}"
-  base-url: "https://openrouter.ai/api/v1"
+  api-key: "${LLM_API_KEY:${OPENROUTER_API_KEY:}}"
+  base-url: "${LLM_BASE_URL:https://openrouter.ai/api/v1}"
   connect-timeout: 30000
   read-timeout: 60000
   chat:
@@ -136,8 +136,8 @@ open-router:
         static-filename: document.pdf
   # 受支持的模型配置
   remote-registry:
-    enabled: true
-    url: "https://openrouter.ai/api/v1/models?output_modalities=text"
+    enabled: ${LLM_REMOTE_REGISTRY_ENABLED:true}
+    url: "${LLM_MODELS_URL:https://openrouter.ai/api/v1/models?output_modalities=text}"
     cron: "0 0/30 * * * ?"
     read-timeout-seconds: 30
     # 过滤模式：ALL（所有模型）、FREE（免费模型）、PAID（付费模型）`
@@ -163,7 +163,7 @@ open-router:
 
 # 生成助手 Agent 配置
 generation-agent:
-  model-id: "openai/gpt-4o-mini"
+  model-id: "${GENERATION_AGENT_MODEL_ID:openai/gpt-4o-mini}"
   max-tool-rounds: 8
   draft-ttl-minutes: 30
   session-ttl-seconds: 2592000
@@ -171,7 +171,7 @@ generation-agent:
 
 # AI 提示词辅助（工作流表单字段）
 prompt-assist:
-  model-id: "openai/gpt-4o-mini"
+  model-id: "${PROMPT_ASSIST_MODEL_ID:openai/gpt-4o-mini}"
   max-output-chars: 2000
 
 server:

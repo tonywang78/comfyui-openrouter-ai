@@ -18,6 +18,6 @@ export namespace PromptEnhanceApi {
 
 export const promptAssistApi = {
   enhance: (params: PromptEnhanceApi.Params) => {
-    return post<PromptEnhanceApi.Result>('/llm/prompt/enhance', params)
+    return post<PromptEnhanceApi.Result>('/llm/prompt/enhance', params, { timeout: 30000 })
   }
 }

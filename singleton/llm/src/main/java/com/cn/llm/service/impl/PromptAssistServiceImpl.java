@@ -229,6 +229,29 @@ public class PromptAssistServiceImpl implements PromptAssistService {
         return parts;
     }
 
+    /** 剥离模型常见的 ```json ... ``` 包裹，并截取 JSON 对象 */
+    private static String stripMarkdownJsonFence(String text) {
+        if (StringUtils.isBlank(text)) {
+            return text;
+        }
+        String s = text.trim();
+        if (s.startsWith("```")) {
+            int lineEnd = s.indexOf('\n');
+            s = lineEnd >= 0 ? s.substring(lineEnd + 1) : s.substring(3);
+            int fence = s.lastIndexOf("```");
+            if (fence >= 0) {
+                s = s.substring(0, fence);
+            }
+            s = s.trim();
+        }
+        int start = s.indexOf('{');
+        int end = s.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            return s.substring(start, end + 1);
+        }
+        return s;
+    }
+
     private PromptEnhanceVo parseResponse(String responseStr) throws LlmException {
         if (StringUtils.isBlank(responseStr)) {
             throw new LlmException("模型返回为空");
@@ -240,7 +263,7 @@ public class PromptAssistServiceImpl implements PromptAssistService {
             if (StringUtils.isBlank(content)) {
                 throw new LlmException("模型未返回内容");
             }
-            JSONObject parsed = JSON.parseObject(content.trim());
+            JSONObject parsed = JSON.parseObject(stripMarkdownJsonFence(content));
             String prompt = StringUtils.trimToEmpty(parsed.getString("prompt"));
             String explanation = StringUtils.trimToEmpty(parsed.getString("explanation"));
             if (prompt.isEmpty()) {

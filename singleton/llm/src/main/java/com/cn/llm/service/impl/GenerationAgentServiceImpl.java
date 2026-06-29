@@ -258,7 +258,7 @@ public class GenerationAgentServiceImpl implements GenerationAgentService {
                     .bodyToMono(String.class)
                     .block(Duration.ofMinutes(3));
 
-            JSONObject response = JSON.parseObject(responseStr);
+            JSONObject response = JSON.parseObject(extractJsonPayload(responseStr));
             JSONObject choice = response.getJSONArray("choices").getJSONObject(0);
             JSONObject message = choice.getJSONObject("message");
             String finishReason = choice.getString("finish_reason");
@@ -335,6 +335,26 @@ public class GenerationAgentServiceImpl implements GenerationAgentService {
 
         sessionStore.addAssistantMessage(sessionId, finalContent, citations.isEmpty() ? null : citations);
         emitter.complete();
+    }
+
+    /** 兼容部分 OpenAI 兼容网关在非流式下仍返回 SSE（data: {...}）的情况 */
+    private static String extractJsonPayload(String responseStr) {
+        if (StringUtils.isBlank(responseStr)) {
+            return responseStr;
+        }
+        for (String line : responseStr.split("\\r?\\n")) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty() || "[DONE]".equals(trimmed)) {
+                continue;
+            }
+            if (trimmed.startsWith("data:")) {
+                trimmed = trimmed.substring(5).trim();
+            }
+            if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+                return trimmed;
+            }
+        }
+        return responseStr.trim();
     }
 
     private String buildSystemPrompt(String sessionId) {
