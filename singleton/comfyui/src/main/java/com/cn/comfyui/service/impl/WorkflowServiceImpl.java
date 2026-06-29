@@ -21,6 +21,7 @@ import com.cn.common.configuration.ComfyuiConfiguration;
 import com.cn.common.entity.Workflow;
 import com.cn.common.entity.WorkflowCategory;
 import com.cn.common.entity.WorkflowForm;
+import com.cn.common.enums.ComfyuiFormTypeEnum;
 import com.cn.common.enums.RequiredEnum;
 import com.cn.common.enums.TaskStatusEnum;
 import com.cn.common.exceptions.CreditException;
@@ -370,6 +371,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
                     try {
                         Workflow workflows = getWorkflow(workflowId);
+                        containers = mergeHiddenFormFields(workflowId, containers);
                         
                         // 确定需要的积分数量并检查冻结
                         Long creditsRequired;
@@ -503,6 +505,7 @@ public class WorkflowServiceImpl implements WorkflowService {
                         .lambda()
                         .eq(WorkflowForm::getWorkflowId, workflowId))
                 .stream()
+                .filter(c -> c.getHidden() == null || !RequiredEnum.TRUE.getDec().equals(c.getHidden()))
                 .map(c -> new WorkflowInterfaceVo.WorkflowsFormContainer()
                         .setNodeKey(c.getNodeKey())
                         .setInputs(c.getInputs())
@@ -736,6 +739,47 @@ public class WorkflowServiceImpl implements WorkflowService {
         } catch (Exception e) {
             log.error("记录任务取消统计失败", e);
         }
+    }
+
+    /**
+     * 合并隐藏字段：用户端不展示，提交时用 template 自动注入
+     */
+    private List<TaskNodeContainer> mergeHiddenFormFields(Long workflowId, List<TaskNodeContainer> userContainers) {
+        List<WorkflowForm> forms = workflowsFormMapper.selectList(new QueryWrapper<WorkflowForm>().lambda()
+                .eq(WorkflowForm::getWorkflowId, workflowId)
+                .eq(WorkflowForm::getHidden, RequiredEnum.TRUE.getDec()));
+
+        if (forms.isEmpty()) {
+            return userContainers;
+        }
+
+        Map<String, TaskNodeContainer> merged = new LinkedHashMap<>();
+        for (WorkflowForm form : forms) {
+            if (!StringUtils.isNotBlank(form.getTemplate())) {
+                continue;
+            }
+            String key = form.getNodeKey() + "_" + form.getInputs();
+            merged.put(key, new TaskNodeContainer()
+                    .setNodeKey(form.getNodeKey())
+                    .setInputs(form.getInputs())
+                    .setNodeValue(form.getTemplate())
+                    .setIsUpload(isUploadFormType(form.getType())));
+        }
+        for (TaskNodeContainer c : userContainers) {
+            merged.put(c.getNodeKey() + "_" + c.getInputs(), c);
+        }
+        return new ArrayList<>(merged.values());
+    }
+
+    private boolean isUploadFormType(String type) {
+        if (type == null) {
+            return false;
+        }
+        return ComfyuiFormTypeEnum.IMAGE_UPLOAD.getDec().equals(type)
+                || ComfyuiFormTypeEnum.IMAGE_CONFIGURABLE.getDec().equals(type)
+                || ComfyuiFormTypeEnum.IMAGE_SCRIBBLE.getDec().equals(type)
+                || ComfyuiFormTypeEnum.VIDEO_UPLOAD.getDec().equals(type)
+                || ComfyuiFormTypeEnum.AUDIO_UPLOAD.getDec().equals(type);
     }
 
 }

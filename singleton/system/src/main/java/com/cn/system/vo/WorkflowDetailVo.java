@@ -54,6 +54,8 @@ public class WorkflowDetailVo implements Serializable {
         private Long required;
 
         private Long size;
+
+        private Long hidden;
     }
 
     @Data

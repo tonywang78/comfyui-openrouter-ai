@@ -28,6 +28,9 @@ public class WorkflowForm {
 
   private String template;
 
+  /** 1=用户端隐藏，提交时用 template 注入 */
+  private Long hidden;
+
   private Long required;
 
   private Long size;

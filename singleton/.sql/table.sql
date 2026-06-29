@@ -119,10 +119,11 @@ create table ghosts.workflow_form
     tips        varchar(255)         null,
     node_key    varchar(100)         null,
     inputs      varchar(100)         not null,
-    required    tinyint(1) default 0 null,
     options     json                 null,
     size        int                  null,
-    template    varchar(255)         null
+    template    varchar(255)         null,
+    hidden      tinyint(1) default 0 not null comment '1=隐藏，提交时自动注入 template',
+    required    tinyint(1) default 0 null
 )
     comment '工作流表单表';
 

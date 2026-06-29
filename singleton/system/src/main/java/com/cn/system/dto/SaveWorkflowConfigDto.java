@@ -102,14 +102,18 @@ public class SaveWorkflowConfigDto {
         private String options;
 
         /**
-         * 默认值模板
+         * 默认值模板（隐藏字段提交时自动注入）
          */
         private String template;
 
         /**
+         * 是否对用户隐藏（true 时不展示，提交时用 template 注入）
+         */
+        private Boolean hidden;
+
+        /**
          * 是否必填（true/false）
          */
-        @NotNull(message = "required 字段不能为空")
         private Boolean required;
 
         /**

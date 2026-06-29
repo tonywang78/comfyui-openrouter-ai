@@ -662,6 +662,9 @@ export default {
         optional: 'Optional',
         formLabel: 'Form Label/Hint',
         defaultTemplate: 'Default Template (optional)',
+        hiddenTemplateRequired: 'Default value for hidden field (required, injected on submit)',
+        hidden: 'Hidden',
+        visible: 'Visible',
         sizeLength: 'Size/Length',
         options: 'Options',
         optionsPlaceholder: 'Options (JSON object string, e.g. {"low":"Low","mid":"Mid"})',
@@ -702,7 +705,8 @@ export default {
         fileFormatError: 'Please upload a .json file',
         optionsRequired: 'Selector type must provide options',
         optionsInvalidFormat: 'Options must be a non-empty JSON object',
-        optionsJsonError: 'Options must be a JSON object string'
+        optionsJsonError: 'Options must be a JSON object string',
+        hiddenTemplateRequired: 'Node {node} requires a default template when hidden'
       },
       messages: {
         deleteConfirm: 'Confirm delete "{name}"? This will not delete generated works, only form and output configuration.',

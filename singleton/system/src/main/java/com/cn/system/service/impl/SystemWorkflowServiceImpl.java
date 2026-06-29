@@ -341,7 +341,8 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
                         .setOptions(f.getOptions())
                         .setTemplate(f.getTemplate())
                         .setRequired(f.getRequired())
-                        .setSize(f.getSize()))
+                        .setSize(f.getSize())
+                        .setHidden(f.getHidden()))
                 .collect(Collectors.toList());
 
         List<WorkflowDetailVo.SavedOutputNode> savedOutputNodes = outputs.stream()
@@ -414,6 +415,7 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
                         .setTips(input.getTips())
                         .setOptions(StringUtils.hasText(input.getOptions()) ? input.getOptions() : null)
                         .setTemplate(input.getTemplate())
+                        .setHidden(Boolean.TRUE.equals(input.getHidden()) ? RequiredEnum.TRUE.getDec() : RequiredEnum.FALSE.getDec())
                         .setRequired(Boolean.TRUE.equals(input.getRequired()) ? RequiredEnum.TRUE.getDec() : RequiredEnum.FALSE.getDec())
                         .setSize(input.getSize()))
                 .toList();
@@ -566,6 +568,12 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
      */
     private void validateFormNodeConfigs(List<SaveWorkflowConfigDto.FormNodeConfig> formNodeList) {
         for (SaveWorkflowConfigDto.FormNodeConfig config : formNodeList) {
+            if (Boolean.TRUE.equals(config.getHidden())
+                    && !StringUtils.hasText(config.getTemplate())) {
+                throw new UniversalException(
+                        String.format("节点 [%s] 设为隐藏时必须填写默认值模板", config.getNodeKey()));
+            }
+
             String optionsStr = config.getOptions();
 
             // options 为可选；若提供则校验为有效 JSON 对象

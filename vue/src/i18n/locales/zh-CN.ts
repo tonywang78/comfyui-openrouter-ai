@@ -662,6 +662,9 @@ export default {
         optional: '可选',
         formLabel: '表单标签/提示',
         defaultTemplate: '默认值模板（可选）',
+        hiddenTemplateRequired: '隐藏字段默认值（提交时自动注入，必填）',
+        hidden: '隐藏',
+        visible: '展示',
         sizeLength: '大小/长度',
         options: '选项',
         optionsPlaceholder: '选项（JSON 对象字符串，如 {"low":"低","mid":"中"}）',
@@ -702,7 +705,8 @@ export default {
         fileFormatError: '请上传 .json 文件',
         optionsRequired: '选择器类型必须提供 options',
         optionsInvalidFormat: 'options 必须为非空 JSON 对象',
-        optionsJsonError: 'options 必须为 JSON 对象字符串'
+        optionsJsonError: 'options 必须为 JSON 对象字符串',
+        hiddenTemplateRequired: '节点 {node} 设为隐藏时必须填写默认值模板'
       },
       messages: {
         deleteConfirm: '确认删除"{name}"？该操作不会删除已生成的作品，仅删除表单与输出配置。',

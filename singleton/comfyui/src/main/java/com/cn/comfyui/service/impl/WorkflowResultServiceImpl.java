@@ -1,6 +1,10 @@
 package com.cn.comfyui.service.impl;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cn.comfyui.dto.BatchDeleteWorkflowResultDto;
@@ -9,7 +13,10 @@ import com.cn.comfyui.excepitons.ComfyuiException;
 import com.cn.comfyui.service.WorkflowResultService;
 import com.cn.comfyui.vo.WorkflowResultVo;
 import com.cn.common.base.BasePage;
+import com.cn.common.entity.WorkflowForm;
 import com.cn.common.entity.WorkflowResult;
+import com.cn.common.enums.RequiredEnum;
+import com.cn.common.mapper.WorkflowFormMapper;
 import com.cn.common.mapper.WorkflowResultMapper;
 import com.cn.common.utils.UploadUtil;
 import com.cn.common.utils.UserUtils;
@@ -18,7 +25,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 作品服务实现类
@@ -33,6 +43,7 @@ import java.util.List;
 public class WorkflowResultServiceImpl implements WorkflowResultService {
 
     private final WorkflowResultMapper worksMapper;
+    private final WorkflowFormMapper workflowFormMapper;
     private final UploadUtil uploadUtil;
 
     @Override
@@ -58,7 +69,7 @@ public class WorkflowResultServiceImpl implements WorkflowResultService {
                 .setTaskId(works.getTaskId())
                 .setUrl(uploadUtil.toSignedUrl(works.getUrl()))
                 .setWorkflowId(works.getWorkflowId())
-                .setFormParams(works.getFormParams());
+                .setFormParams(filterHiddenFormParams(works.getWorkflowId(), works.getFormParams()));
     }
 
     @Override
@@ -107,7 +118,7 @@ public class WorkflowResultServiceImpl implements WorkflowResultService {
                 .setType(c.getType())
                 .setUrl(uploadUtil.toSignedUrl(c.getUrl()))
                 .setWorkflowId(c.getWorkflowId())
-                .setFormParams(c.getFormParams()));
+                .setFormParams(filterHiddenFormParams(c.getWorkflowId(), c.getFormParams())));
 
         // 构建返回结果
         return new BasePage<WorkflowResultVo>()
@@ -144,5 +155,44 @@ public class WorkflowResultServiceImpl implements WorkflowResultService {
         log.info("用户 {} 批量删除了 {} 个作品", currentUserId, workflowResultIds.size());
     }
 
+    /**
+     * 作品详情/列表展示时过滤隐藏字段（与 workflow_form.hidden 一致）
+     */
+    private JSONObject filterHiddenFormParams(Long workflowId, JSONObject formParams) {
+        if (formParams == null || workflowId == null) {
+            return formParams;
+        }
+        JSONArray containers = formParams.getJSONArray("taskNodeContainer");
+        if (containers == null || containers.isEmpty()) {
+            return formParams;
+        }
+
+        Set<String> hiddenKeys = workflowFormMapper.selectList(new QueryWrapper<WorkflowForm>().lambda()
+                        .eq(WorkflowForm::getWorkflowId, workflowId)
+                        .eq(WorkflowForm::getHidden, RequiredEnum.TRUE.getDec()))
+                .stream()
+                .map(f -> f.getNodeKey() + "_" + f.getInputs())
+                .collect(Collectors.toCollection(HashSet::new));
+
+        if (hiddenKeys.isEmpty()) {
+            return formParams;
+        }
+
+        JSONArray visible = new JSONArray();
+        for (int i = 0; i < containers.size(); i++) {
+            JSONObject node = containers.getJSONObject(i);
+            if (node == null) {
+                continue;
+            }
+            String key = node.getString("nodeKey") + "_" + node.getString("inputs");
+            if (!hiddenKeys.contains(key)) {
+                visible.add(node);
+            }
+        }
+
+        JSONObject filtered = JSON.parseObject(formParams.toJSONString());
+        filtered.put("taskNodeContainer", visible);
+        return filtered;
+    }
 
 }

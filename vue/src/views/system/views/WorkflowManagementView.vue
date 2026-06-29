@@ -163,11 +163,16 @@
                 <el-select v-model="item.type" style="width: 200px">
                   <el-option v-for="type in getAvailableTypes(item)" :key="type" :label="t('system.workflow.formTypes.' + type)" :value="type" />
                 </el-select>
-                <el-switch v-model="item.required" :active-text="t('system.workflow.dialog.required')" :inactive-text="t('system.workflow.dialog.optional')" />
+                <el-switch v-model="item.required" :disabled="!item.enabled || item.hidden" :active-text="t('system.workflow.dialog.required')" :inactive-text="t('system.workflow.dialog.optional')" />
+                <el-switch v-model="item.hidden" :disabled="!item.enabled" :active-text="t('system.workflow.dialog.hidden')" :inactive-text="t('system.workflow.dialog.visible')" />
               </div>
               <div class="row-2">
                 <el-input v-model="item.tips" :disabled="!item.enabled" :placeholder="t('system.workflow.dialog.formLabel')" />
-                <el-input v-model="item.template" :disabled="!item.enabled" :placeholder="t('system.workflow.dialog.defaultTemplate')" />
+                <el-input
+                  v-model="item.template"
+                  :disabled="!item.enabled"
+                  :placeholder="item.hidden ? t('system.workflow.dialog.hiddenTemplateRequired') : t('system.workflow.dialog.defaultTemplate')"
+                />
                 <el-input-number v-model="item.size" :disabled="!item.enabled" :min="0" :max="100000" :controls="false" :placeholder="t('system.workflow.dialog.sizeLength')" />
               </div>
               <div class="row-3" v-if="(item.type === WorkflowFormTypeEnum.RADIO_SELECTOR || item.type === WorkflowFormTypeEnum.CHECKBOX_SELECTOR) && item.enabled">
@@ -307,6 +312,7 @@ type ConfigFormNode = {
   required: boolean
   size?: number
   enabled: boolean
+  hidden: boolean
 }
 
 const configFormNodes = ref<ConfigFormNode[]>([])
@@ -403,7 +409,8 @@ const mapParseNodeToDefaultConfig = (
     || n.type === WorkflowFormTypeEnum.AUDIO_UPLOAD ? 10 : 500,
   template: '',
   options: n.type === WorkflowFormTypeEnum.TEXT_CONFIGURABLE ? '' : undefined,
-  enabled
+  enabled,
+  hidden: false
 })
 
 const mapSavedNodeToConfig = (saved: SavedFormNode): ConfigFormNode => ({
@@ -415,7 +422,8 @@ const mapSavedNodeToConfig = (saved: SavedFormNode): ConfigFormNode => ({
   template: saved.template || '',
   required: saved.required === 1,
   size: saved.size,
-  enabled: true
+  enabled: true,
+  hidden: saved.hidden === 1
 })
 
 const applyParsedWorkflow = (data: ParsingWorkflowVo, savedMap?: Map<string, SavedFormNode>) => {
@@ -634,6 +642,10 @@ const handleSave = async () => {
   // 选择器需要校验 options
   const enabledFormNodes = configFormNodes.value.filter(n => n.enabled)
   for (const item of enabledFormNodes) {
+    if (item.hidden && !item.template?.trim()) {
+      ElNotification.error(t('system.workflow.validation.hiddenTemplateRequired', { node: item.nodeKey }))
+      return
+    }
     if ((item.type === WorkflowFormTypeEnum.RADIO_SELECTOR || item.type === WorkflowFormTypeEnum.CHECKBOX_SELECTOR)) {
       if (!item.options) {
         ElNotification.error(t('system.workflow.validation.optionsRequired'))
@@ -666,7 +678,8 @@ const handleSave = async () => {
       tips: i.tips,
       options: i.options,
       template: i.template,
-      required: i.required ? 1 : 0,
+      hidden: i.hidden ? 1 : 0,
+      required: i.hidden ? 0 : (i.required ? 1 : 0),
       size: i.size
     })),
     outputNodeList: outputNodes.value

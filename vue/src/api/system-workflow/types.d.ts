@@ -56,6 +56,7 @@ export interface WorkflowDetailVo {
     options?: string
     template?: string
     required: 0 | 1
+    hidden?: 0 | 1
     size?: number
   }[]
   outputNodeList: OutputNodeConfig[]
@@ -69,6 +70,7 @@ export interface FormNodeConfig {
   options?: string
   template?: string
   required: 0 | 1
+  hidden?: 0 | 1
   size?: number
 }
 
