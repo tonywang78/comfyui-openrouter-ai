@@ -25,7 +25,7 @@ onMounted(() => {
     <div class="logo-icon">
       <div ref="logoContainer" class="lottie-container"></div>
     </div>
-    <span class="logo-text">Cogni X</span>
+    <span class="logo-text">慧心云创</span>
   </div>
 </template>
 

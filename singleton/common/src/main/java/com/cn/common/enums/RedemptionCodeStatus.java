@@ -5,7 +5,7 @@ import lombok.Getter;
 /**
  * 兑换码状态枚举
  * 
- * @author CogniX
+ * @author 慧心云创
  */
 @Getter
 public enum RedemptionCodeStatus {

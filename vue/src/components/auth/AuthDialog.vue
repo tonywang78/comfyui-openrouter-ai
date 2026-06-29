@@ -218,7 +218,7 @@ watch(visible, (newVal) => {
   >
     <div class="auth-dialog-header">
       <div ref="logoContainer" class="lottie-container"></div>
-      <h2 class="logo-text">Cogni X</h2>
+      <h2 class="logo-text">慧心云创</h2>
     </div>
 
     <div class="auth-dialog-content">

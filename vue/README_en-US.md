@@ -1,10 +1,10 @@
 [English](./README_en-US.md) | [简体中文](./README.md) | [日本語](./README_ja-JP.md)
 
-# Cogni X - Quick Deployment Guide
+# 慧心云创 - Quick Deployment Guide
 
 ## 📖 Project Introduction
 
-Cogni X is a modern AI application platform based on Vue 3, offering a variety of AI-powered services.
+慧心云创 is a modern AI application platform based on Vue 3, offering a variety of AI-powered services.
 
 ### Tech Stack
 

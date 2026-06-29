@@ -1,10 +1,10 @@
 [English](./README_en-US.md) | [简体中文](./README.md) | [日本語](./README_ja-JP.md)
 
-# Cogni X - 快速部署指南
+# 慧心云创 - 快速部署指南
 
 ## 📖 项目简介
 
-Cogni X 是一个基于 Vue 3 的现代化 AI 应用平台，提供多种 AI 功能服务。
+慧心云创是一个基于 Vue 3 的现代化 AI 应用平台，提供多种 AI 功能服务。
 
 ### 技术栈
 

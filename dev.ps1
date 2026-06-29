@@ -61,7 +61,8 @@ function Import-DotEnv {
         Write-Warning ".env 不存在，将使用 application-dev.yml 中的默认值"
         return
     }
-    Get-Content $EnvFile | ForEach-Object {
+    # .env 为 UTF-8；Windows 默认编码(GBK)会把中文签名与下一行合并成一条错误变量
+    Get-Content $EnvFile -Encoding UTF8 | ForEach-Object {
         $line = $_.Trim()
         if ($line -eq '' -or $line.StartsWith('#')) { return }
         $idx = $line.IndexOf('=')

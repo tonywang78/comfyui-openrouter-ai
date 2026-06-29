@@ -65,7 +65,7 @@ public class EmailUtil {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         try {
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true);
-            helper.setSubject("Cogni X");
+            helper.setSubject("慧心云创");
             helper.setFrom(username);
             helper.setTo(email);
             helper.setSentDate(new Date());

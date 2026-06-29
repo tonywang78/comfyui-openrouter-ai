@@ -6,7 +6,7 @@ import java.util.Random;
 /**
  * 兑换码生成工具类
  * 
- * @author CogniX
+ * @author 慧心云创
  */
 public class RedemptionCodeGenerator {
 

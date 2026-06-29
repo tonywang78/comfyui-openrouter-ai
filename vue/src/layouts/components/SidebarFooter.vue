@@ -6,17 +6,12 @@ const { t } = useI18n()
 const handleAnnouncementClick = () => {
   emitter.emit(OPEN_NOTICE_ANNOUNCER)
 }
-
-const handleGitHubClick = () => {
-  window.open('https://github.com/dulaiduwang003?tab=repositories', '_blank')
-}
 </script>
 
 <template>
   <div class="sidebar-footer">
     <div class="footer-links">
       <span @click="handleAnnouncementClick">{{ t('layouts.sidebar.footer.announcement') }}</span>
-      <span @click="handleGitHubClick">{{ t('layouts.sidebar.footer.visitGitHub') }}</span>
     </div>
   </div>
 </template>
