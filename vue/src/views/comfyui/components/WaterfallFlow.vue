@@ -4,6 +4,8 @@
       v-if="containerWidth > 0"
       ref="waterfallRef"
       :list="processedItems"
+      img-selector="imageUrl"
+      :cross-origin="false"
       :gutter="10"
       :breakpoints="{
         3000: { rowPerView: 10 },
@@ -23,15 +25,20 @@
       :lazyload="true"
       :delay="300"
     >
-      <template #default="{ item }">
+      <template #default="{ item, url }">
         <div class="waterfall-item" :key="item.id" @click="handleItemClick(item)">
+          <!-- 无封面时显示占位 -->
+          <div v-if="!url" class="image-error-placeholder">
+            <el-icon size="48" color="#ccc"><Picture /></el-icon>
+            <p>{{ item.title }}</p>
+          </div>
           <!-- 普通图片预览 -->
-          <div v-if="!imageErrors[item.id]" class="image-wrapper">
+          <div v-else-if="!imageErrors[item.id]" class="image-wrapper">
             <div v-if="!imageLoaded[item.id]" class="loading-spinner">
               <el-icon class="is-loading" size="24" color="#888"><Loading /></el-icon>
             </div>
             <LazyImg 
-              :url="item.imageUrl" 
+              :url="url" 
               :alt="item.title"
               class="waterfall-image"
               @error="() => handleImageError(item)"
