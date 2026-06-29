@@ -34,6 +34,7 @@ public class RoutePathFilter {
 				SaRouter.match("/**")
 						.notMatch(
 								"/auth/**",
+								"/client/**",
 								"/ws/**",
 								"/llm/chat/stream",
 								"/llm/generation/stream",

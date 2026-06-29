@@ -1,0 +1,5 @@
+node_modules/
+
+# Capacitor 原生工程由 `npm run add:android` / `add:ios` 本地生成
+android/
+ios/

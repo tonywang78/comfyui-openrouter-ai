@@ -1,4 +1,5 @@
 import { get, post } from '@/utils/requestUtil'
+import { buildApiUrl } from '@/config/runtime'
 import type {
   GenerationSubmitApi,
   GenerationConfirmApi,
@@ -41,7 +42,7 @@ export const generationApi = {
     }
     const token = localStorage.getItem('token')
     if (token) q.set('token', token)
-    const url = `${import.meta.env.VITE_API_BASE_URL}/llm/generation/stream?${q.toString()}`
+    const url = `${buildApiUrl('/llm/generation/stream')}?${q.toString()}`
     return new EventSource(url)
   }
 }

@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElNotification, ElButton } from 'element-plus'
 import { authApi } from '@/api/auth/auth'
+import { isMobileClient } from '@/config/runtime'
+import { buildWechatOAuthUrl, openExternalUrl } from '@/utils/platformUtil'
 import WeChatBindPhoneForm from './WeChatBindPhoneForm.vue'
 
 declare global {
@@ -39,6 +41,7 @@ const loading = ref(true)
 const bindTicket = ref('')
 const pollTimer = ref<number | null>(null)
 const currentState = ref('')
+const isMobile = computed(() => isMobileClient())
 
 const loadWxLoginScript = (): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -85,6 +88,11 @@ const initWechatLogin = async () => {
   try {
     const loginState = await authApi.reqWechatLoginState()
     currentState.value = loginState.state
+
+    if (isMobile.value) {
+      return
+    }
+
     await loadWxLoginScript()
 
     const container = document.getElementById('wechat_login_container')
@@ -114,6 +122,23 @@ const initWechatLogin = async () => {
     })
   } finally {
     loading.value = false
+  }
+}
+
+const openWechatInBrowser = async () => {
+  try {
+    const loginState = await authApi.reqWechatLoginState()
+    currentState.value = loginState.state
+    startPolling(loginState.state)
+    await openExternalUrl(
+      buildWechatOAuthUrl(loginState.appId, loginState.redirectUri, loginState.state)
+    )
+  } catch (error) {
+    console.error('Open WeChat login in browser failed:', error)
+    ElNotification.error({
+      title: t('common.error'),
+      message: t('auth.wechatLoginInitFailed')
+    })
   }
 }
 
@@ -151,6 +176,13 @@ onUnmounted(() => {
       @bind="(payload) => emit('bind-phone', payload)"
       @send-code="(phone) => emit('send-bind-code', phone)"
     />
+    <template v-else-if="isMobile">
+      <p class="wechat-tip">{{ t('auth.wechatMobileTip') }}</p>
+      <el-button type="primary" :loading="loading" @click="openWechatInBrowser">
+        {{ t('auth.wechatOpenInBrowser') }}
+      </el-button>
+      <el-button link type="primary" @click="initWechatLogin">{{ t('auth.refreshQrcode') }}</el-button>
+    </template>
     <template v-else>
       <p class="wechat-tip">{{ t('auth.wechatScanTip') }}</p>
       <div id="wechat_login_container" class="wechat-qrcode" v-loading="loading"></div>

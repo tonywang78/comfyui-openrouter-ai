@@ -46,7 +46,7 @@ function Show-Help {
   .\dev.ps1 install            安装前后端依赖 (npm ci + mvn package)
   .\dev.ps1 backend            编译并启动后端 -> http://localhost:9000/api
   .\dev.ps1 backend -SkipBuild 跳过编译，直接启动后端
-  .\dev.ps1 frontend           启动前端 Vite -> http://localhost:8080
+  .\dev.ps1 frontend           启动前端 Vite -> http://0.0.0.0:8080
   .\dev.ps1 all                infra + 新窗口启动前后端
 
 提示:
@@ -163,7 +163,7 @@ function Start-Frontend {
 
     Free-Port -Port 8080
     Push-Location $Vue
-    Write-Host '>>> 启动前端 http://localhost:8080'
+    Write-Host '>>> 启动前端 http://0.0.0.0:8080 （局域网可访问）'
     npm run dev
     $code = $LASTEXITCODE
     Pop-Location
@@ -188,7 +188,7 @@ function Start-All {
 
 >>> 已启动前后端（各开一个 PowerShell 窗口）
     后端: http://localhost:9000/api
-    前端: http://localhost:8080
+    前端: http://0.0.0.0:8080
 
 "@
 }

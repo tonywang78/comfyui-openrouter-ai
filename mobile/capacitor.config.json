@@ -1,0 +1,13 @@
+{
+  "appId": "com.conni.xpro",
+  "appName": "Conni-X-Pro",
+  "webDir": "../vue/dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "conni-x-pro-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Conni-X-Pro Tauri desktop shell",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "build:debug": "tauri build --debug"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4"
+  }
+}

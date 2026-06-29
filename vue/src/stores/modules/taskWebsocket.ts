@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { taskWebSocket, type WebSocketMessage } from '@/utils/taskWebsocketUtil'
+import { buildWebSocketUrl } from '@/config/runtime'
 import { comfyuiTaskApi } from '@/api/workflow-task/workflow-task'
 import type { GetTaskProgressPageApi } from '@/api/workflow-task/types'
 import { WebSocketMessageTypeEnum, WorkflowTaskStatusEnum } from '@/enums'
@@ -86,7 +87,7 @@ export const useTaskWebSocketStore = defineStore('taskWebsocket', () => {
 
       // 连接WebSocket（使用优化的配置）
       await taskWebSocket.connect({
-        url: import.meta.env.VITE_API_BASE_URL + comfyuiTaskApi.getComfyuiTaskProgressWebsocketUrl(),
+        url: buildWebSocketUrl(comfyuiTaskApi.getComfyuiTaskProgressWebsocketUrl()),
         token: token,
         maxRetries: Infinity,             // 无限重连
         retryInterval: 3000,              // 基础重连间隔3秒

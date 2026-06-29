@@ -16,18 +16,18 @@
 
     <div v-if="!collapsed" class="session-list">
       <p v-if="!sessions.length" class="empty-hint">{{ t('generate.sidebar.empty') }}</p>
-      <button
+      <div
         v-for="s in sessions"
         :key="s.id"
-        type="button"
         class="session-item"
         :class="{ active: s.id === activeSessionId }"
-        @click="$emit('select-session', s.id)"
       >
-        <span class="session-icon">💬</span>
-        <span class="title">{{ s.title }}</span>
-        <button type="button" class="delete" @click.stop="$emit('delete-session', s.id)">×</button>
-      </button>
+        <button type="button" class="session-main" @click="$emit('select-session', s.id)">
+          <span class="session-icon">💬</span>
+          <span class="title">{{ s.title }}</span>
+        </button>
+        <button type="button" class="delete" :aria-label="t('common.delete')" @click="$emit('delete-session', s.id)">×</button>
+      </div>
     </div>
   </aside>
 </template>
@@ -128,15 +128,26 @@ const collapsed = ref(false)
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border: none;
+  gap: 4px;
+  padding: 4px;
   border-radius: 10px;
+  margin-bottom: 4px;
+  transition: background 0.15s ease;
+}
+
+.session-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 8px;
   background: transparent;
   cursor: pointer;
   text-align: left;
-  margin-bottom: 4px;
-  transition: background 0.15s ease;
+  color: inherit;
 }
 
 .session-item:hover { background: var(--el-fill-color); }

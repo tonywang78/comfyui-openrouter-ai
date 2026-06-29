@@ -4,10 +4,12 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Fold, Expand } from '@element-plus/icons-vue'
 import emitter, { OPEN_AUTH_DIALOG, OPEN_NOTICE_ANNOUNCER } from '@/utils/eventBusUtil'
+import { useClientLayout } from '@/composables/useClientLayout'
 
 import SidebarLogo from './components/SidebarLogo.vue'
 import SidebarMenu from './components/SidebarMenu.vue'
 import SidebarFooter from './components/SidebarFooter.vue'
+import MobileTabBar from './components/MobileTabBar.vue'
 import TopNavbar from './components/TopNavbar.vue'
 import AuthDialog from '@/components/auth/AuthDialog.vue'
 import RedemptionCodeDialog from '@/components/common/RedemptionCodeDialog.vue'
@@ -15,11 +17,12 @@ import NoticeAnnouncer from '@/components/notice/NoticeAnnouncer.vue'
 
 const { t } = useI18n()
 const route = useRoute()
+const { isMobile } = useClientLayout()
 
 const SIDEBAR_COLLAPSED_KEY = 'main-sidebar-collapsed'
 
 const shouldHideSidebar = computed(() => {
-  return route.meta?.hideSidebar === true
+  return route.meta?.hideSidebar === true || isMobile.value
 })
 
 const sidebarCollapsed = ref(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true')
@@ -52,7 +55,7 @@ const handleLogin = () => {
 
 <template>
   <div>
-    <div class="layout-container">
+    <div class="layout-container" :class="{ mobile: isMobile }">
 
       <div
         v-if="!shouldHideSidebar"
@@ -75,13 +78,14 @@ const handleLogin = () => {
         <SidebarFooter :collapsed="sidebarCollapsed" />
       </div>
 
-      <div class="main-content" :class="{ 'full-width': shouldHideSidebar }">
+      <div class="main-content" :class="{ 'full-width': shouldHideSidebar, mobile: isMobile }">
         <TopNavbar @login-click="handleLogin" />
-        <div class="content-area">
+        <div class="content-area" :class="{ mobile: isMobile }">
           <router-view></router-view>
         </div>
       </div>
     </div>
+    <MobileTabBar v-if="isMobile && !route.meta?.hideSidebar" />
     <AuthDialog />
     <RedemptionCodeDialog />
     <NoticeAnnouncer ref="noticeAnnouncerRef" />
@@ -188,6 +192,15 @@ html[class*=" theme-dark"] .main-content {
   overflow-y: auto;
 
   height: calc(100vh - 60px);
+}
+
+.content-area.mobile {
+  height: calc(100vh - 60px - 60px - env(safe-area-inset-bottom, 0px));
+  padding-bottom: 8px;
+}
+
+.layout-container.mobile .main-content {
+  width: 100vw;
 }
 
 .content-area.no-scroll {

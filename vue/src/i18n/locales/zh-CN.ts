@@ -37,6 +37,8 @@ export default {
     phone: '手机号',
     passwordOptional: '密码（可选）',
     wechatScanTip: '请使用微信扫描二维码登录',
+    wechatMobileTip: '移动端将在浏览器中打开微信授权，完成后返回本应用',
+    wechatOpenInBrowser: '在浏览器中微信登录',
     wechatBindPhoneTip: '首次微信登录需绑定手机号',
     bindAndLogin: '绑定并登录',
     refreshQrcode: '刷新二维码',

@@ -1,5 +1,6 @@
 import type { GetModelsPageApi, GetModelsListApi, SubmitMessageApi, ChatStreamApi, DeleteChatSessionApi,ModelItem } from './types'
 import { get, post } from '@/utils/requestUtil'
+import { buildApiUrl } from '@/config/runtime'
 
 export const chatApi = {
     // 获取模型列表(分页)
@@ -37,7 +38,7 @@ export const chatApi = {
             q.set('token', token)
         }
         
-        const url = `${import.meta.env.VITE_API_BASE_URL}/llm/chat/stream?${q.toString()}`
+        const url = `${buildApiUrl('/llm/chat/stream')}?${q.toString()}`
         const eventSource = new EventSource(url)
         
         return eventSource

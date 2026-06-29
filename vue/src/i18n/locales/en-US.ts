@@ -37,6 +37,8 @@ export default {
     phone: 'Phone Number',
     passwordOptional: 'Password (optional)',
     wechatScanTip: 'Scan the QR code with WeChat to log in',
+    wechatMobileTip: 'WeChat authorization opens in your browser. Return here after login.',
+    wechatOpenInBrowser: 'Log in with WeChat in browser',
     wechatBindPhoneTip: 'First-time WeChat login requires phone binding',
     bindAndLogin: 'Bind & Login',
     refreshQrcode: 'Refresh QR Code',

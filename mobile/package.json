@@ -1,0 +1,24 @@
+{
+  "name": "conni-x-pro-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Conni-X-Pro Capacitor mobile shell",
+  "scripts": {
+    "build:web": "npm run build:mobile --prefix ../vue",
+    "sync": "npm run build:web && npx cap sync",
+    "sync:android": "npm run sync && npx cap open android",
+    "sync:ios": "npm run sync && npx cap open ios",
+    "add:android": "npx cap add android",
+    "add:ios": "npx cap add ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/app": "^6.0.2",
+    "@capacitor/browser": "^6.0.5",
+    "@capacitor/core": "^6.2.1",
+    "@capacitor/ios": "^6.2.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.1"
+  }
+}

@@ -42,6 +42,23 @@ server:
   servlet:
     context-path: /api
 
+app:
+  cors:
+    enabled: true
+    allowed-origins:
+      - "http://localhost:*"
+      - "http://127.0.0.1:*"
+      - "https://localhost:*"
+      - "https://127.0.0.1:*"
+      - "https://tauri.localhost"
+      - "capacitor://localhost"
+      - "ionic://localhost"
+      - "https://*.yourdomain.com"
+  client:
+    version: "0.1.0"
+    min-supported-version: "0.1.0"
+    download-url: "https://yourdomain.com/download"
+
 # Windows 终端多为 UTF-8，而 JDK 默认 stdout.encoding=GBK，会导致业务日志中文乱码
 logging:
   charset:

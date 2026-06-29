@@ -11,6 +11,30 @@ target/
 hs_err_pid*
 replay_pid*
 
+# --- Node 依赖（各子工程）---
+node_modules/
+**/node_modules/
+
+# --- 前端构建产物 ---
+vue/dist/
+vue/dist-ssr/
+**/dist/stats.html
+*.tsbuildinfo
+**/.tmp/
+
+# --- Tauri / Rust 构建产物 ---
+desktop/src-tauri/target/
+
+# --- Capacitor 同步与原生构建产物 ---
+mobile/android/.gradle/
+mobile/android/**/build/
+mobile/android/app/src/main/assets/public/
+mobile/android/app/src/main/assets/capacitor.config.json
+mobile/android/app/src/main/assets/capacitor.plugins.json
+mobile/ios/App/public/
+mobile/ios/build/
+mobile/ios/DerivedData/
+
 # --- 环境变量（含密钥，勿提交）---
 .env
 .env.local

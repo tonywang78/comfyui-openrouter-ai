@@ -5,6 +5,7 @@ import router from '../router'
 import { HttpStatus } from '../constants/http-status/httpStatus'
 import { isSuccessResponse } from '../constants/http-status/helps'
 import i18n from '@/i18n'
+import { getApiBaseUrl } from '@/config/runtime'
 
 // 响应结果接口
 interface HttpResponse<T = any> {
@@ -15,8 +16,8 @@ interface HttpResponse<T = any> {
 
 // 创建axios实例
 const service = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL, // 从环境变量获取API基础URL
-  timeout: 15000, 
+  baseURL: getApiBaseUrl(),
+  timeout: 15000,
 })
 
 // 封装网络错误通知函数
@@ -50,6 +51,7 @@ class NetworkError extends Error {
 // 请求拦截器
 service.interceptors.request.use(
   (config) => {
+    config.baseURL = getApiBaseUrl()
     const { t } = i18n.global
     // 检查网络连接状态
     if (!checkNetworkStatus()) {
