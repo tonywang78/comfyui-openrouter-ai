@@ -3,10 +3,12 @@ import { ref, onMounted } from 'vue'
 import lottie from 'lottie-web'
 import logoAnimation from '@/assets/lottie/logo.json'
 
-// 添加 lottie 动画相关的 ref
+defineProps<{
+  collapsed?: boolean
+}>()
+
 const logoContainer = ref<HTMLElement | null>(null)
 
-// 在组件挂载后初始化 Lottie 动画
 onMounted(() => {
   if (logoContainer.value) {
     lottie.loadAnimation({
@@ -21,11 +23,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="logo-container">
+  <div class="logo-container" :class="{ collapsed }">
     <div class="logo-icon">
       <div ref="logoContainer" class="lottie-container"></div>
     </div>
-    <span class="logo-text">慧心云创</span>
+    <span v-show="!collapsed" class="logo-text">慧心云创</span>
   </div>
 </template>
 
@@ -35,12 +37,24 @@ onMounted(() => {
   align-items: center;
   padding: 10px 8px;
   margin-bottom: 25px;
+  transition: padding 0.25s ease, margin-bottom 0.25s ease, justify-content 0.25s ease;
+}
+
+.logo-container.collapsed {
+  justify-content: center;
+  padding: 6px 0;
+  margin-bottom: 16px;
 }
 
 .logo-icon {
   margin-right: 12px;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
+}
+
+.logo-container.collapsed .logo-icon {
+  margin-right: 0;
 }
 
 .lottie-container {
@@ -48,9 +62,16 @@ onMounted(() => {
   height: 42px;
 }
 
+.logo-container.collapsed .lottie-container {
+  width: 36px;
+  height: 36px;
+}
+
 .logo-text {
   font-size: 24px;
   font-weight: 600;
   color: var(--el-text-color-primary);
+  white-space: nowrap;
+  overflow: hidden;
 }
-</style> 
+</style>

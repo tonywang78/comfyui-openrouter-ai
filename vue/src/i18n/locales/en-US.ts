@@ -985,6 +985,8 @@ export default {
   layouts: {
     // Sidebar menu
     sidebar: {
+      collapse: 'Collapse sidebar',
+      expand: 'Expand sidebar',
       menu: {
         onlineGeneration: 'Create',
         onlineGenerationDesc: 'ComfyUI Workflow',

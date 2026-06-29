@@ -985,6 +985,8 @@ export default {
   layouts: {
     // 侧边栏菜单
     sidebar: {
+      collapse: '折叠侧边栏',
+      expand: '展开侧边栏',
       menu: {
         onlineGeneration: '在线生成',
         onlineGenerationDesc: 'ComfyUI 工作流',

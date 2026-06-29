@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import lottie from 'lottie-web'
-import logoAnimation from '@/assets/lottie/logo.json'
+import { useI18n } from 'vue-i18n'
+import { Fold, Expand } from '@element-plus/icons-vue'
 import emitter, { OPEN_AUTH_DIALOG, OPEN_NOTICE_ANNOUNCER } from '@/utils/eventBusUtil'
-
 
 import SidebarLogo from './components/SidebarLogo.vue'
 import SidebarMenu from './components/SidebarMenu.vue'
@@ -14,34 +13,30 @@ import AuthDialog from '@/components/auth/AuthDialog.vue'
 import RedemptionCodeDialog from '@/components/common/RedemptionCodeDialog.vue'
 import NoticeAnnouncer from '@/components/notice/NoticeAnnouncer.vue'
 
+const { t } = useI18n()
 const route = useRoute()
+
+const SIDEBAR_COLLAPSED_KEY = 'main-sidebar-collapsed'
 
 const shouldHideSidebar = computed(() => {
   return route.meta?.hideSidebar === true
 })
 
+const sidebarCollapsed = ref(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true')
 
-const logoContainer = ref<HTMLElement | null>(null)
+const toggleSidebar = () => {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+  localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(sidebarCollapsed.value))
+}
+
+
 const noticeAnnouncerRef = ref<InstanceType<typeof NoticeAnnouncer> | null>(null)
 
 const handleOpenNotice = () => {
-  console.log('handleOpenNotice called, ref:', noticeAnnouncerRef.value)
   noticeAnnouncerRef.value?.manualOpen()
 }
 
 onMounted(() => {
-
-  if (logoContainer.value) {
-    lottie.loadAnimation({
-      container: logoContainer.value,
-      renderer: 'svg',
-      loop: true,
-      autoplay: true,
-      animationData: logoAnimation
-    })
-  }
-
-  console.log('Registering OPEN_NOTICE_ANNOUNCER listener')
   emitter.on(OPEN_NOTICE_ANNOUNCER, handleOpenNotice)
 })
 
@@ -59,10 +54,25 @@ const handleLogin = () => {
   <div>
     <div class="layout-container">
 
-      <div v-if="!shouldHideSidebar" class="sidebar">
-        <SidebarLogo />
-        <SidebarMenu />
-        <SidebarFooter @login-click="handleLogin" />
+      <div
+        v-if="!shouldHideSidebar"
+        class="sidebar"
+        :class="{ collapsed: sidebarCollapsed }"
+      >
+        <SidebarLogo :collapsed="sidebarCollapsed" />
+        <SidebarMenu :collapsed="sidebarCollapsed" />
+        <button
+          type="button"
+          class="sidebar-toggle"
+          :title="sidebarCollapsed ? t('layouts.sidebar.expand') : t('layouts.sidebar.collapse')"
+          @click="toggleSidebar"
+        >
+          <el-icon :size="16">
+            <Fold v-if="!sidebarCollapsed" />
+            <Expand v-else />
+          </el-icon>
+        </button>
+        <SidebarFooter :collapsed="sidebarCollapsed" />
       </div>
 
       <div class="main-content" :class="{ 'full-width': shouldHideSidebar }">
@@ -98,7 +108,7 @@ const handleLogin = () => {
 
 /* Sidebar Styles */
 .sidebar {
-  width: 200px;
+  width: 240px;
   min-width: 240px;
   background-color: var(--el-bg-color);
   color: var(--el-text-color-primary);
@@ -106,10 +116,43 @@ const handleLogin = () => {
   display: flex;
   flex-direction: column;
   padding: 20px 12px;
-  transition: width 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+  transition: width 0.25s ease, min-width 0.25s ease, padding 0.25s ease, background-color 0.3s ease, color 0.3s ease;
 
   border-right: 1px solid var(--el-border-color-dark);
+}
 
+.sidebar.collapsed {
+  width: 64px;
+  min-width: 64px;
+  padding: 16px 8px;
+}
+
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 36px;
+  margin: 4px 0 8px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 10px;
+  background: var(--el-fill-color-blank);
+  color: var(--el-text-color-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.sidebar.collapsed .sidebar-toggle {
+  width: 40px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sidebar-toggle:hover {
+  color: var(--el-color-primary);
+  border-color: var(--el-color-primary-light-5);
+  background-color: var(--el-fill-color-light);
 }
 
 .main-content {

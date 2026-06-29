@@ -21,6 +21,10 @@ const router = useRouter()
 const route = useRoute()
 const activeItem = ref('')
 
+defineProps<{
+  collapsed?: boolean
+}>()
+
 interface MenuItem {
   id: string;
   title: string;
@@ -167,27 +171,46 @@ router.afterEach((to) => {
 </script>
 
 <template>
-  <div class="menu-sections">
+  <div class="menu-sections" :class="{ collapsed }">
     <TransitionGroup name="section-fade" tag="div">
       <div v-for="(section, sectionIndex) in filteredMenuSections" :key="sectionIndex" class="menu-section">
-        <h3 v-if="section.title" class="section-title">{{ section.title }}</h3>
+        <h3 v-if="section.title && !collapsed" class="section-title">{{ section.title }}</h3>
+        <div v-else-if="section.title && collapsed && sectionIndex > 0" class="section-divider" />
         <ul>
           <TransitionGroup name="menu-slide">
-            <li v-for="(item, itemIndex) in section.items" :key="item.id" 
-              class="menu-item" 
+            <li
+              v-for="(item, itemIndex) in section.items"
+              :key="item.id"
+              class="menu-item"
               :class="{ active: computedActiveItem === item.id }"
               :style="{ '--item-index': itemIndex }"
-              @click="handleMenuClick(item)">
-              <div class="item-content">
-                <span class="icon">
-                  <img :src="item.icon" :alt="item.title" />
-                </span>
-                <div class="item-text-content">
-                  <span class="text">{{ item.title }}</span>
-                  <span v-if="item.description" class="description">{{ item.description }}</span>
+              @click="handleMenuClick(item)"
+            >
+              <el-tooltip
+                v-if="collapsed"
+                :content="item.badge ? `${item.title} (${item.badge})` : item.title"
+                placement="right"
+                :show-after="300"
+              >
+                <div class="item-content">
+                  <span class="icon">
+                    <img :src="item.icon" :alt="item.title" />
+                    <span v-if="item.badge" class="badge-dot" />
+                  </span>
                 </div>
-                <span v-if="item.badge" class="badge default">{{ item.badge }}</span>
-              </div>
+              </el-tooltip>
+              <template v-else>
+                <div class="item-content">
+                  <span class="icon">
+                    <img :src="item.icon" :alt="item.title" />
+                  </span>
+                  <div class="item-text-content">
+                    <span class="text">{{ item.title }}</span>
+                    <span v-if="item.description" class="description">{{ item.description }}</span>
+                  </div>
+                  <span v-if="item.badge" class="badge default">{{ item.badge }}</span>
+                </div>
+              </template>
               <div class="ripple-effect"></div>
             </li>
           </TransitionGroup>
@@ -224,6 +247,21 @@ router.afterEach((to) => {
 .section-fade-leave-to {
   opacity: 0;
   transform: translateY(10px);
+}
+
+.menu-sections.collapsed {
+  margin-right: 0;
+  padding-right: 0;
+}
+
+.menu-sections.collapsed .menu-section {
+  margin-bottom: 8px;
+}
+
+.section-divider {
+  height: 1px;
+  margin: 8px 6px 10px;
+  background-color: var(--el-border-color-lighter);
 }
 
 .menu-section {
@@ -281,6 +319,37 @@ router.afterEach((to) => {
 
 .menu-item:hover {
   transform: translateX(4px) scale(1.02);
+}
+
+.menu-sections.collapsed .menu-item {
+  justify-content: center;
+  padding: 10px;
+  margin: 4px 0;
+  border-radius: 12px;
+}
+
+.menu-sections.collapsed .menu-item:hover {
+  transform: scale(1.05);
+}
+
+.menu-sections.collapsed .menu-item .item-content {
+  justify-content: center;
+}
+
+.menu-sections.collapsed .menu-item .icon {
+  margin-right: 0;
+  position: relative;
+}
+
+.badge-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--el-color-primary);
+  border: 1.5px solid var(--el-bg-color);
 }
 
 .menu-item.active {
