@@ -25,6 +25,14 @@ export namespace UpdateNicknameApi {
     }
 }
 
+// 修改密码接口
+export namespace ChangePasswordApi {
+    export interface Params {
+        oldPassword: string
+        newPassword: string
+    }
+}
+
 // 获取用户积分信息接口
 export namespace GetUserCreditsApi {
     export interface Result {

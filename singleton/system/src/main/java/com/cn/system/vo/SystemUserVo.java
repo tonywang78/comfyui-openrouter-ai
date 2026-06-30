@@ -20,6 +20,8 @@ public class SystemUserVo {
 
     private String email;
 
+    private String phone;
+
     private String nickname;
 
     private String avatar;

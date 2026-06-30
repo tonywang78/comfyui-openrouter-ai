@@ -15,8 +15,8 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class PasswordLoginDto {
 
-    @NotEmpty(message = "登录邮箱不能为空")
-    private String email;
+    @NotEmpty(message = "登录账号不能为空")
+    private String account;
 
     @NotEmpty(message = "登录密码不能为空")
     private String password;

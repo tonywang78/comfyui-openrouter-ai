@@ -28,8 +28,37 @@ const emit = defineEmits(['login'])
 
 const formRef = ref()
 
+const phonePattern = /^1[3-9]\d{9}$/
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 const rules = computed<FormRules>(() => ({
   account: [
+    { required: true, message: t('auth.pleaseEnterAccount'), trigger: 'blur' },
+    {
+      validator: (_rule, value, callback) => {
+        const account = (value || '').trim()
+        if (!account) {
+          callback()
+          return
+        }
+        if (account.includes('@')) {
+          if (!emailPattern.test(account)) {
+            callback(new Error(t('auth.pleaseEnterValidEmail')))
+            return
+          }
+        } else if (/^\d+$/.test(account)) {
+          if (!phonePattern.test(account)) {
+            callback(new Error(t('auth.pleaseEnterValidPhone')))
+            return
+          }
+        } else {
+          callback(new Error(t('auth.pleaseEnterValidAccount')))
+          return
+        }
+        callback()
+      },
+      trigger: 'blur'
+    }
   ],
   password: [
     { required: true, message: t('auth.pleaseEnterPassword'), trigger: 'blur' },
@@ -63,7 +92,7 @@ const handleLogin = () => {
       autocomplete="off"
     >
       <el-form-item prop="account">
-        <el-input v-model="loginForm.account" :placeholder="t('auth.account') + '/' + t('auth.email')" size="large" autocomplete="off" />
+        <el-input v-model="loginForm.account" :placeholder="t('auth.accountPlaceholder')" size="large" autocomplete="off" maxlength="64" />
       </el-form-item>
       <el-form-item prop="password">
         <el-input

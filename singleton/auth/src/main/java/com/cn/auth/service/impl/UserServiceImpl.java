@@ -1,9 +1,11 @@
 package com.cn.auth.service.impl;
 
+import cn.dev33.satoken.secure.SaSecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cn.auth.dto.ChangePasswordDto;
 import com.cn.auth.dto.UpdateAvatarDto;
 import com.cn.auth.dto.UpdateNicknameDto;
 import com.cn.auth.service.UserService;
@@ -77,6 +79,25 @@ public class UserServiceImpl implements UserService {
                 user -> user.setNickname(dto.getNickname()),
                 // 更新缓存中的用户信息
                 (userInfo, dbUser) -> userInfo.setNickname(dto.getNickname()));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void changePassword(final ChangePasswordDto dto) {
+        final Long userId = UserUtils.getCurrentLoginId();
+        final User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new IllegalArgumentException("用户不存在");
+        }
+        if (!SaSecureUtil.md5(dto.getOldPassword()).equals(user.getPassword())) {
+            throw new IllegalArgumentException("原密码不正确");
+        }
+        if (dto.getOldPassword().equals(dto.getNewPassword())) {
+            throw new IllegalArgumentException("新密码不能与原密码相同");
+        }
+        userMapper.updateById(new User()
+                .setId(userId)
+                .setPassword(SaSecureUtil.md5(dto.getNewPassword())));
     }
 
     /**

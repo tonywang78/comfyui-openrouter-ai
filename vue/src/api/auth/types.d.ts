@@ -1,7 +1,7 @@
 export namespace PasswordLoginApi {
 
     export interface Params {
-        email: string
+        account: string
         password: string
     }
     

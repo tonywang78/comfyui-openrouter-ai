@@ -47,6 +47,7 @@ export default {
     pleaseEnterPhone: 'Please enter phone number',
     pleaseEnterValidPhone: 'Please enter a valid phone number',
     account: 'Account',
+    accountPlaceholder: 'Email / Phone',
     email: 'Email',
     password: 'Password',
     verificationCode: 'Verification Code',
@@ -64,6 +65,7 @@ export default {
     pleaseEnterPassword: 'Please enter password',
     pleaseEnterCode: 'Please enter verification code',
     pleaseEnterValidEmail: 'Please enter a valid email address',
+    pleaseEnterValidAccount: 'Please enter a valid email or phone number',
     passwordMinLength: 'Password must be at least 6 characters',
     codeLength: 'Verification code must be 6 characters',
     
@@ -492,7 +494,7 @@ export default {
       title: 'User Management',
       createUser: 'Create User',
       editUser: 'Edit User',
-      searchPlaceholder: 'Search by email or nickname',
+      searchPlaceholder: 'Search by email, phone or nickname',
       userRole: 'User Role',
       search: 'Search',
       reset: 'Reset',
@@ -500,6 +502,7 @@ export default {
         id: 'ID',
         avatar: 'Avatar',
         email: 'Email',
+        phone: 'Phone',
         nickname: 'Nickname',
         role: 'Role',
         createTime: 'Create Time',
@@ -516,10 +519,12 @@ export default {
       form: {
         email: 'Email',
         password: 'Password',
+        phone: 'Phone',
         nickname: 'Nickname',
         avatar: 'Avatar',
         role: 'Role',
-        emailPlaceholder: 'Please enter email',
+        emailPlaceholder: 'Enter email (or phone)',
+        phonePlaceholder: 'Enter phone (or email)',
         passwordPlaceholder: 'Please enter password',
         nicknamePlaceholder: 'Please enter nickname',
         rolePlaceholder: 'Please select role',
@@ -531,6 +536,8 @@ export default {
       validation: {
         emailRequired: 'Please enter email',
         emailFormat: 'Please enter a valid email',
+        phoneFormat: 'Please enter a valid phone number',
+        contactRequired: 'Email or phone is required',
         passwordRequired: 'Please enter password',
         passwordMinLength: 'Password must be at least 6 characters',
         nicknameRequired: 'Please enter nickname',
@@ -816,13 +823,15 @@ export default {
   profile: {
     dialogs: {
       changeAvatar: 'Change Avatar',
-      editNickname: 'Edit Nickname'
+      editNickname: 'Edit Nickname',
+      changePassword: 'Change Password'
     },
     banner: {
       avatarAlt: 'User Avatar',
       changeAvatar: 'Change Avatar',
       defaultNickname: 'No Nickname Set',
       edit: 'Edit',
+      changePassword: 'Change Password',
       availableCredits: 'Available Credits',
       frozenCredits: 'Frozen Credits',
       totalCredits: 'Total Credits'
@@ -874,6 +883,23 @@ export default {
       invalidError: 'Please enter a valid nickname',
       updateSuccess: 'Nickname updated successfully',
       updateFailed: 'Nickname update failed'
+    },
+    password: {
+      oldLabel: 'Current Password',
+      newLabel: 'New Password',
+      confirmLabel: 'Confirm New Password',
+      oldPlaceholder: 'Enter current password',
+      newPlaceholder: 'Enter new password (min 6 characters)',
+      confirmPlaceholder: 'Enter new password again',
+      cancel: 'Cancel',
+      saving: 'Saving...',
+      save: 'Confirm Change',
+      oldRequired: 'Please enter current password',
+      newRequired: 'Please enter new password',
+      confirmRequired: 'Please confirm new password',
+      minLength: 'New password must be at least 6 characters',
+      notMatch: 'New passwords do not match',
+      updateSuccess: 'Password changed successfully'
     }
   },
   works: {

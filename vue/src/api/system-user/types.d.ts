@@ -17,6 +17,7 @@ export namespace GetUserPageApi {
     export interface SystemUser {
         id: number
         email: string
+        phone: string
         nickname: string
         avatar: string
         role: Role
@@ -28,7 +29,8 @@ export namespace GetUserPageApi {
 // 创建用户接口
 export namespace CreateUserApi {
     export interface Params {
-        email: string
+        email?: string
+        phone?: string
         password: string
         nickname?: string
         avatar?: string
@@ -43,6 +45,7 @@ export namespace UpdateUserApi {
     export interface Params {
         id: number
         email?: string
+        phone?: string
         nickname?: string
         avatar?: string
         role?: Role

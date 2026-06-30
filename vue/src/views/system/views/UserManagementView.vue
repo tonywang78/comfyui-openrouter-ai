@@ -66,7 +66,8 @@
             </el-avatar>
           </template>
         </el-table-column>
-        <el-table-column prop="email" :label="t('system.users.table.email')" min-width="200" />
+        <el-table-column prop="email" :label="t('system.users.table.email')" min-width="180" />
+        <el-table-column prop="phone" :label="t('system.users.table.phone')" min-width="140" />
         <el-table-column prop="nickname" :label="t('system.users.table.nickname')" min-width="150" />
         <el-table-column :label="t('system.users.table.role')" width="120">
           <template #default="{ row }">
@@ -134,6 +135,14 @@
             v-model="userForm.email"
             :placeholder="t('system.users.form.emailPlaceholder')"
             :disabled="isEdit"
+          />
+        </el-form-item>
+        <el-form-item :label="t('system.users.form.phone')" prop="phone">
+          <el-input
+            v-model="userForm.phone"
+            :placeholder="t('system.users.form.phonePlaceholder')"
+            :disabled="isEdit"
+            maxlength="11"
           />
         </el-form-item>
         <el-form-item v-if="!isEdit" :label="t('system.users.form.password')" prop="password">
@@ -230,17 +239,60 @@ const formRef = ref<FormInstance>()
 const userForm = reactive({
   id: 0,
   email: '',
+  phone: '',
   password: '',
   nickname: '',
   avatar: '',
   role: Role.USER
 })
 
+const phonePattern = /^1[3-9]\d{9}$/
+
 // 表单验证规则
 const formRules = computed<FormRules>(() => ({
   email: [
-    { required: true, message: t('system.users.validation.emailRequired'), trigger: 'blur' },
-    { type: 'email', message: t('system.users.validation.emailFormat'), trigger: 'blur' }
+    {
+      validator: (_rule, value, callback) => {
+        if (isEdit.value) {
+          callback()
+          return
+        }
+        const email = (value || '').trim()
+        const phone = userForm.phone.trim()
+        if (!email && !phone) {
+          callback(new Error(t('system.users.validation.contactRequired')))
+          return
+        }
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          callback(new Error(t('system.users.validation.emailFormat')))
+          return
+        }
+        callback()
+      },
+      trigger: 'blur'
+    }
+  ],
+  phone: [
+    {
+      validator: (_rule, value, callback) => {
+        if (isEdit.value) {
+          callback()
+          return
+        }
+        const phone = (value || '').trim()
+        const email = userForm.email.trim()
+        if (!email && !phone) {
+          callback(new Error(t('system.users.validation.contactRequired')))
+          return
+        }
+        if (phone && !phonePattern.test(phone)) {
+          callback(new Error(t('system.users.validation.phoneFormat')))
+          return
+        }
+        callback()
+      },
+      trigger: 'blur'
+    }
   ],
   password: [
     { required: true, message: t('system.users.validation.passwordRequired'), trigger: 'blur' },
@@ -356,7 +408,8 @@ const handleCreate = () => {
 const handleEdit = (row: GetUserPageApi.SystemUser) => {
   isEdit.value = true
   userForm.id = row.id
-  userForm.email = row.email
+  userForm.email = row.email || ''
+  userForm.phone = row.phone || ''
   userForm.nickname = row.nickname
   userForm.avatar = row.avatar
   userForm.role = row.role
@@ -366,7 +419,7 @@ const handleEdit = (row: GetUserPageApi.SystemUser) => {
 // 删除用户
 const handleDelete = (row: GetUserPageApi.SystemUser) => {
   ElMessageBox.confirm(
-    t('system.users.messages.deleteConfirm', { name: row.nickname || row.email }),
+    t('system.users.messages.deleteConfirm', { name: row.nickname || row.email || row.phone }),
     t('system.users.messages.deleteTitle'),
     {
       confirmButtonText: t('common.confirm'),
@@ -400,7 +453,8 @@ const handleSubmit = async () => {
         // 更新用户
         await systemUserApi.reqUpdateUser({
           id: userForm.id,
-          email: userForm.email,
+          email: userForm.email || undefined,
+          phone: userForm.phone || undefined,
           nickname: userForm.nickname,
           avatar: userForm.avatar,
           role: userForm.role
@@ -409,7 +463,8 @@ const handleSubmit = async () => {
       } else {
         // 创建用户
         await systemUserApi.reqCreateUser({
-          email: userForm.email,
+          email: userForm.email.trim() || undefined,
+          phone: userForm.phone.trim() || undefined,
           password: userForm.password,
           nickname: userForm.nickname,
           avatar: userForm.avatar,
@@ -433,6 +488,7 @@ const handleDialogClose = () => {
   formRef.value?.resetFields()
   userForm.id = 0
   userForm.email = ''
+  userForm.phone = ''
   userForm.password = ''
   userForm.nickname = ''
   userForm.avatar = ''

@@ -93,10 +93,17 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String passwordLogin(final PasswordLoginDto dto) {
-        final User user = userMapper.selectOne(new QueryWrapper<User>()
+        final String account = StringUtils.trim(dto.getAccount());
+        final String hashedPassword = SaSecureUtil.md5(dto.getPassword());
+        final LambdaQueryWrapper<User> wrapper = new QueryWrapper<User>()
                 .lambda()
-                .eq(User::getEmail, dto.getEmail())
-                .eq(User::getPassword, SaSecureUtil.md5(dto.getPassword())));
+                .eq(User::getPassword, hashedPassword);
+        if (account.matches("^1[3-9]\\d{9}$")) {
+            wrapper.eq(User::getPhone, account);
+        } else {
+            wrapper.eq(User::getEmail, account);
+        }
+        final User user = userMapper.selectOne(wrapper);
         if (user == null) {
             throw new AuthException("登陆账号或密码错误");
         }

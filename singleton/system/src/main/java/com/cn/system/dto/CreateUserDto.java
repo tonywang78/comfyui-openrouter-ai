@@ -2,6 +2,7 @@ package com.cn.system.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -17,9 +18,11 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class CreateUserDto {
 
-    @NotBlank(message = "邮箱不能为空")
     @Email(message = "邮箱格式不正确")
     private String email;
+
+    @Pattern(regexp = "^$|^1[3-9]\\d{9}$", message = "请输入有效的手机号")
+    private String phone;
 
     @NotBlank(message = "密码不能为空")
     @Size(min = 6, message = "密码长度至少为6位")

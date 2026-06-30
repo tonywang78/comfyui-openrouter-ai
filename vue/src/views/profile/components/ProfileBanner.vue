@@ -52,6 +52,16 @@
               <el-icon><Edit /></el-icon>
               {{ t('profile.banner.edit') }}
             </el-button>
+            <el-button
+              type="primary"
+              size="small"
+              link
+              @click="handleChangePassword"
+              class="edit-name-btn"
+            >
+              <el-icon><Lock /></el-icon>
+              {{ t('profile.banner.changePassword') }}
+            </el-button>
           </div>
           
           <div class="credits-info">
@@ -111,6 +121,7 @@ defineProps<Props>()
 const emit = defineEmits<{
   avatarClick: []
   editNickname: []
+  changePassword: []
 }>()
 
 const bannerRef = ref(null)
@@ -170,6 +181,10 @@ const handleAvatarError = (event: Event) => {
 
 const handleEditNickname = () => {
   emit('editNickname')
+}
+
+const handleChangePassword = () => {
+  emit('changePassword')
 }
 </script>
 

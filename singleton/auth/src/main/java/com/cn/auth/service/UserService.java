@@ -1,5 +1,6 @@
 package com.cn.auth.service;
 
+import com.cn.auth.dto.ChangePasswordDto;
 import com.cn.auth.dto.UpdateAvatarDto;
 import com.cn.auth.dto.UpdateNicknameDto;
 
@@ -38,6 +39,13 @@ public interface UserService {
      * @param dto 包含新昵称的DTO
      */
     void updateNickname(UpdateNicknameDto dto);
+
+    /**
+     * 修改当前用户密码
+     *
+     * @param dto 包含原密码与新密码
+     */
+    void changePassword(ChangePasswordDto dto);
 
     /**
      * 获取当前用户积分信息

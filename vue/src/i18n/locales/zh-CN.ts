@@ -47,6 +47,7 @@ export default {
     pleaseEnterPhone: '请输入手机号',
     pleaseEnterValidPhone: '请输入有效的手机号',
     account: '账号',
+    accountPlaceholder: '邮箱 / 手机号',
     email: '邮箱',
     password: '密码',
     verificationCode: '验证码',
@@ -64,6 +65,7 @@ export default {
     pleaseEnterPassword: '请输入密码',
     pleaseEnterCode: '请输入验证码',
     pleaseEnterValidEmail: '请输入有效的邮箱地址',
+    pleaseEnterValidAccount: '请输入有效的邮箱或手机号',
     passwordMinLength: '密码长度至少6位',
     codeLength: '验证码长度为6位',
     
@@ -492,7 +494,7 @@ export default {
       title: '用户管理',
       createUser: '新增用户',
       editUser: '编辑用户',
-      searchPlaceholder: '搜索邮箱或昵称',
+      searchPlaceholder: '搜索邮箱、手机号或昵称',
       userRole: '用户角色',
       search: '搜索',
       reset: '重置',
@@ -500,6 +502,7 @@ export default {
         id: 'ID',
         avatar: '头像',
         email: '邮箱',
+        phone: '手机号',
         nickname: '昵称',
         role: '角色',
         createTime: '创建时间',
@@ -516,10 +519,12 @@ export default {
       form: {
         email: '邮箱',
         password: '密码',
+        phone: '手机号',
         nickname: '昵称',
         avatar: '头像',
         role: '角色',
-        emailPlaceholder: '请输入邮箱',
+        emailPlaceholder: '请输入邮箱（与手机号二选一）',
+        phonePlaceholder: '请输入手机号（与邮箱二选一）',
         passwordPlaceholder: '请输入密码',
         nicknamePlaceholder: '请输入昵称',
         rolePlaceholder: '请选择角色',
@@ -531,6 +536,8 @@ export default {
       validation: {
         emailRequired: '请输入邮箱',
         emailFormat: '请输入正确的邮箱格式',
+        phoneFormat: '请输入有效的手机号',
+        contactRequired: '邮箱和手机号至少填写一项',
         passwordRequired: '请输入密码',
         passwordMinLength: '密码长度不能少于6位',
         nicknameRequired: '请输入昵称',
@@ -816,13 +823,15 @@ export default {
   profile: {
     dialogs: {
       changeAvatar: '更换头像',
-      editNickname: '编辑昵称'
+      editNickname: '编辑昵称',
+      changePassword: '修改密码'
     },
     banner: {
       avatarAlt: '用户头像',
       changeAvatar: '更换头像',
       defaultNickname: '未设置昵称',
       edit: '编辑',
+      changePassword: '修改密码',
       availableCredits: '可用积分',
       frozenCredits: '冻结积分',
       totalCredits: '总积分'
@@ -874,6 +883,23 @@ export default {
       invalidError: '请输入有效的昵称',
       updateSuccess: '昵称更新成功',
       updateFailed: '昵称更新失败'
+    },
+    password: {
+      oldLabel: '原密码',
+      newLabel: '新密码',
+      confirmLabel: '确认新密码',
+      oldPlaceholder: '请输入当前密码',
+      newPlaceholder: '请输入新密码（至少6位）',
+      confirmPlaceholder: '请再次输入新密码',
+      cancel: '取消',
+      saving: '保存中...',
+      save: '确认修改',
+      oldRequired: '请输入原密码',
+      newRequired: '请输入新密码',
+      confirmRequired: '请确认新密码',
+      minLength: '新密码长度不能少于6位',
+      notMatch: '两次输入的新密码不一致',
+      updateSuccess: '密码修改成功'
     }
   },
   works: {

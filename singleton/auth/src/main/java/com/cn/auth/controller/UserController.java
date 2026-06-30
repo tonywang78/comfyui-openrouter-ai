@@ -1,6 +1,7 @@
 package com.cn.auth.controller;
 
 
+import com.cn.auth.dto.ChangePasswordDto;
 import com.cn.auth.dto.UpdateAvatarDto;
 import com.cn.auth.dto.UpdateNicknameDto;
 import com.cn.auth.service.UserService;
@@ -61,6 +62,16 @@ public class UserController {
     public Result updateNickname(@RequestBody @Validated UpdateNicknameDto dto) {
          userService.updateNickname(dto);
             return Result.ok();
+    }
+
+    /**
+     * 修改当前用户密码
+     */
+    @PostMapping(value = "/change-password", produces = MediaType.APPLICATION_JSON_VALUE)
+    @RateLimit(permitsPerSecond = 0.05, limitType = RateLimit.LimitType.USER, message = "密码修改过于频繁，请稍后再试")
+    public Result changePassword(@RequestBody @Validated ChangePasswordDto dto) {
+        userService.changePassword(dto);
+        return Result.ok();
     }
 
     /**

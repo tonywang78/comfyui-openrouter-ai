@@ -31,9 +31,9 @@ export const useAuthStore = defineStore('auth', () => {
     await userStore.fetchUserInfo()
   }
 
-  async function passwordLogin(email: string, password: string) {
+  async function passwordLogin(account: string, password: string) {
     try {
-      const tokenValue = await authApi.reqPasswordLogin({ email, password })
+      const tokenValue = await authApi.reqPasswordLogin({ account, password })
       setToken(tokenValue)
       await fetchUserInfoAfterLogin()
       return true

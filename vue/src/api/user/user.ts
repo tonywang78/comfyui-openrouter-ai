@@ -1,4 +1,4 @@
-import type { GetUserInfoApi, UpdateAvatarApi, UpdateNicknameApi, GetUserCreditsApi, GetCreditTransactionsApi } from './types'
+import type { GetUserInfoApi, UpdateAvatarApi, UpdateNicknameApi, ChangePasswordApi, GetUserCreditsApi, GetCreditTransactionsApi } from './types'
 import { get, post } from '@/utils/requestUtil'
 
 export const userApi = {
@@ -14,6 +14,10 @@ export const userApi = {
     // 更新用户昵称
     reqUpdateNickname: (params: UpdateNicknameApi.Params) => {
         return post<void>('/user/update-nickname', params)
+    },
+
+    reqChangePassword: (params: ChangePasswordApi.Params) => {
+        return post<void>('/user/change-password', params)
     },
     
     // 获取用户积分信息

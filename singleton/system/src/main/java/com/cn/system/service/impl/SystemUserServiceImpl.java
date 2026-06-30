@@ -38,8 +38,9 @@ public class SystemUserServiceImpl implements SystemUserService {
         Page<User> mpPage = new Page<>(page == null ? 1 : page, size == null ? 10 : size);
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.isNotBlank(keyword)) {
-            wrapper.like(User::getEmail, keyword)
-                   .or().like(User::getNickname, keyword);
+            wrapper.and(w -> w.like(User::getEmail, keyword)
+                    .or().like(User::getNickname, keyword)
+                    .or().like(User::getPhone, keyword));
         }
         if (StringUtils.isNotBlank(role)) {
             wrapper.eq(User::getRole, role);
@@ -53,21 +54,29 @@ public class SystemUserServiceImpl implements SystemUserService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long create(CreateUserDto dto) {
-        // 校验邮箱是否已存在
-        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(User::getEmail, dto.getEmail());
-        Long count = userMapper.selectCount(wrapper);
-        if (count > 0) {
+        final boolean hasEmail = StringUtils.isNotBlank(dto.getEmail());
+        final boolean hasPhone = StringUtils.isNotBlank(dto.getPhone());
+        if (!hasEmail && !hasPhone) {
+            throw new IllegalArgumentException("邮箱和手机号至少填写一项");
+        }
+        if (hasEmail && userMapper.selectCount(new LambdaQueryWrapper<User>().eq(User::getEmail, dto.getEmail())) > 0) {
             throw new IllegalArgumentException("该邮箱已被注册");
+        }
+        if (hasPhone && userMapper.selectCount(new LambdaQueryWrapper<User>().eq(User::getPhone, dto.getPhone())) > 0) {
+            throw new IllegalArgumentException("该手机号已被注册");
         }
 
         String role = StringUtils.defaultIfBlank(dto.getRole(), RoleEnum.USER.getDesc());
         validateRole(role);
-        
+
+        final String defaultNickname = hasEmail
+                ? dto.getEmail()
+                : "用户" + dto.getPhone().substring(dto.getPhone().length() - 4);
         User user = new User()
-                .setEmail(dto.getEmail())
+                .setEmail(hasEmail ? dto.getEmail() : null)
+                .setPhone(hasPhone ? dto.getPhone() : null)
                 .setPassword(SaSecureUtil.md5(dto.getPassword()))
-                .setNickname(StringUtils.defaultIfBlank(dto.getNickname(), dto.getEmail()))
+                .setNickname(StringUtils.defaultIfBlank(dto.getNickname(), defaultNickname))
                 .setAvatar(dto.getAvatar())
                 .setRole(role);
         userMapper.insert(user);
@@ -81,7 +90,22 @@ public class SystemUserServiceImpl implements SystemUserService {
         if (user == null) {
             throw new IllegalArgumentException("用户不存在");
         }
-        if (StringUtils.isNotBlank(dto.getEmail())) user.setEmail(dto.getEmail());
+        if (StringUtils.isNotBlank(dto.getEmail())) {
+            if (userMapper.selectCount(new LambdaQueryWrapper<User>()
+                    .eq(User::getEmail, dto.getEmail())
+                    .ne(User::getId, dto.getId())) > 0) {
+                throw new IllegalArgumentException("该邮箱已被注册");
+            }
+            user.setEmail(dto.getEmail());
+        }
+        if (StringUtils.isNotBlank(dto.getPhone())) {
+            if (userMapper.selectCount(new LambdaQueryWrapper<User>()
+                    .eq(User::getPhone, dto.getPhone())
+                    .ne(User::getId, dto.getId())) > 0) {
+                throw new IllegalArgumentException("该手机号已被注册");
+            }
+            user.setPhone(dto.getPhone());
+        }
         if (StringUtils.isNotBlank(dto.getNickname())) user.setNickname(dto.getNickname());
         if (StringUtils.isNotBlank(dto.getAvatar())) user.setAvatar(dto.getAvatar());
         if (StringUtils.isNotBlank(dto.getRole())) {
@@ -126,6 +150,7 @@ public class SystemUserServiceImpl implements SystemUserService {
         return new SystemUserVo()
                 .setId(u.getId())
                 .setEmail(u.getEmail())
+                .setPhone(u.getPhone())
                 .setNickname(u.getNickname())
                 .setAvatar(u.getAvatar())
                 .setRole(u.getRole())

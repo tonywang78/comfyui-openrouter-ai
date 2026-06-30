@@ -7,6 +7,7 @@
       :user-credits="userCredits || undefined"
       @avatar-click="showAvatarDialog = true"
       @edit-nickname="showEditNicknameDialog = true"
+      @change-password="showChangePasswordDialog = true"
     />
 
     <div class="profile-content content-enter">
@@ -43,6 +44,20 @@
         @cancel="showEditNicknameDialog = false"
       />
     </el-dialog>
+
+    <el-dialog
+      align-center
+      v-model="showChangePasswordDialog"
+      :title="t('profile.dialogs.changePassword')"
+      width="420px"
+      @closed="handleChangePasswordDialogClosed"
+    >
+      <ChangePassword
+        ref="changePasswordRef"
+        @success="showChangePasswordDialog = false"
+        @cancel="showChangePasswordDialog = false"
+      />
+    </el-dialog>
   </div>
 </template>
 
@@ -54,15 +69,18 @@ import ProfileBanner from './components/ProfileBanner.vue'
 import CreditTransactions from './components/CreditTransactions.vue'
 import AvatarUpload from './components/AvatarUpload.vue'
 import EditNickname from './components/EditNickname.vue'
+import ChangePassword from './components/ChangePassword.vue'
 
 const { t } = useI18n()
 const userStore = useUserStore()
 
 const showAvatarDialog = ref(false)
 const showEditNicknameDialog = ref(false)
+const showChangePasswordDialog = ref(false)
 
 const avatarUploadRef = ref()
 const editNicknameRef = ref()
+const changePasswordRef = ref()
 
 const userInfo = computed(() => userStore.getUserInfo)
 const userCredits = computed(() => userStore.getUserCredits)
@@ -82,6 +100,12 @@ const handleEditNicknameDialogClosed = () => {
   // 对话框关闭后重置组件状态
   if (editNicknameRef.value?.reset) {
     editNicknameRef.value.reset()
+  }
+}
+
+const handleChangePasswordDialogClosed = () => {
+  if (changePasswordRef.value?.reset) {
+    changePasswordRef.value.reset()
   }
 }
 
