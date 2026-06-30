@@ -3,6 +3,7 @@ import { ElForm, ElFormItem, ElInput, ElButton, type FormRules, ElNotification }
 import { reactive, ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import TermsAgreement from './TermsAgreement.vue'
+import CaptchaField from './CaptchaField.vue'
 
 defineOptions({
   name: 'LoginForm'
@@ -19,7 +20,8 @@ const { t } = useI18n()
 
 const loginForm = reactive({
   account: '',
-  password: ''
+  password: '',
+  captchaCode: ''
 })
 
 const agreementChecked = ref(false)
@@ -27,6 +29,7 @@ const agreementChecked = ref(false)
 const emit = defineEmits(['login'])
 
 const formRef = ref()
+const captchaRef = ref<InstanceType<typeof CaptchaField> | null>(null)
 
 const phonePattern = /^1[3-9]\d{9}$/
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -62,6 +65,9 @@ const rules = computed<FormRules>(() => ({
   ],
   password: [
     { required: true, message: t('auth.pleaseEnterPassword'), trigger: 'blur' },
+  ],
+  captchaCode: [
+    { required: true, message: t('auth.pleaseEnterImageCaptcha'), trigger: 'blur' },
   ]
 }))
 
@@ -76,10 +82,23 @@ const handleLogin = () => {
   
   formRef.value.validate((valid: boolean) => {
     if (valid) {
-      emit('login', loginForm)
+      emit('login', {
+        account: loginForm.account,
+        password: loginForm.password,
+        captchaKey: captchaRef.value?.getCaptchaKey?.() || '',
+        captchaCode: loginForm.captchaCode
+      })
     }
   })
 }
+
+const refreshCaptcha = () => {
+  captchaRef.value?.refresh()
+}
+
+defineExpose({
+  refreshCaptcha
+})
 </script>
 
 <template>
@@ -104,6 +123,7 @@ const handleLogin = () => {
           autocomplete="new-password"
         />
       </el-form-item>
+      <CaptchaField ref="captchaRef" v-model:captcha-code="loginForm.captchaCode" />
       <TermsAgreement v-model="agreementChecked" />
       <el-form-item>
         <el-button 
@@ -151,4 +171,4 @@ const handleLogin = () => {
 :deep(.el-form) {
   width: 100%;
 }
-</style> 
+</style>

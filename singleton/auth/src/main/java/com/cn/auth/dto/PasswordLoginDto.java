@@ -21,4 +21,10 @@ public class PasswordLoginDto {
     @NotEmpty(message = "登录密码不能为空")
     private String password;
 
+    @NotEmpty(message = "图形验证码标识不能为空")
+    private String captchaKey;
+
+    @NotEmpty(message = "图形验证码不能为空")
+    private String captchaCode;
+
 }

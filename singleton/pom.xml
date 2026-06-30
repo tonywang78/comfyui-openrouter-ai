@@ -13,7 +13,7 @@
 
     <developers>
         <developer>
-            <name>时间海</name>
+            <name>???</name>
             <organization>bdth, Inc.</organization>
             <organizationUrl>https://github.com/dulaiduwang003?tab=repositories</organizationUrl>
         </developer>
@@ -69,6 +69,7 @@
         <commons-pool2.version>2.12.0</commons-pool2.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <guava.version>33.4.8-jre</guava.version>
+        <hutool.version>5.8.32</hutool.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -140,6 +141,11 @@
                 <artifactId>lombok</artifactId>
                 <version>${lombok.version}</version>
             </dependency>
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-captcha</artifactId>
+                <version>${hutool.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -171,7 +177,7 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
-            <!-- 聚合 pom 无 main class，避免 spring-boot:run 误跑在父工程上 -->
+            <!-- 聚合 pom �?main class，避�?spring-boot:run 误跑在父工程�?-->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

@@ -3,6 +3,7 @@ import { ElForm, ElFormItem, ElInput, ElButton, ElNotification, type FormRules }
 import { reactive, ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import TermsAgreement from './TermsAgreement.vue'
+import CaptchaField from './CaptchaField.vue'
 
 defineOptions({
   name: 'PhoneLoginForm'
@@ -19,11 +20,13 @@ const { t } = useI18n()
 
 const phoneLoginForm = reactive({
   phone: '',
-  code: ''
+  code: '',
+  captchaCode: ''
 })
 
 const agreementChecked = ref(false)
 const formRef = ref()
+const captchaRef = ref<InstanceType<typeof CaptchaField> | null>(null)
 const codeSending = ref(false)
 
 const emit = defineEmits(['login-with-code', 'send-code'])
@@ -35,8 +38,16 @@ const rules = computed<FormRules>(() => ({
   ],
   code: [
     { required: true, message: t('auth.pleaseEnterCode'), trigger: 'blur' }
+  ],
+  captchaCode: [
+    { required: true, message: t('auth.pleaseEnterImageCaptcha'), trigger: 'blur' }
   ]
 }))
+
+const getCaptchaPayload = () => ({
+  captchaKey: captchaRef.value?.getCaptchaKey?.() || '',
+  captchaCode: phoneLoginForm.captchaCode
+})
 
 const handleLogin = () => {
   if (!agreementChecked.value) {
@@ -49,22 +60,37 @@ const handleLogin = () => {
 
   formRef.value.validate((valid: boolean) => {
     if (valid) {
-      emit('login-with-code', phoneLoginForm)
+      emit('login-with-code', {
+        phone: phoneLoginForm.phone,
+        code: phoneLoginForm.code,
+        ...getCaptchaPayload()
+      })
     }
   })
 }
 
 const sendCode = () => {
-  formRef.value.validateField('phone', (valid: boolean) => {
+  formRef.value.validateField(['phone', 'captchaCode'], (valid: boolean) => {
     if (valid) {
       codeSending.value = true
-      emit('send-code', phoneLoginForm.phone)
+      emit('send-code', {
+        phone: phoneLoginForm.phone,
+        ...getCaptchaPayload()
+      })
       setTimeout(() => {
         codeSending.value = false
       }, 2000)
     }
   })
 }
+
+const refreshCaptcha = () => {
+  captchaRef.value?.refresh()
+}
+
+defineExpose({
+  refreshCaptcha
+})
 </script>
 
 <template>
@@ -79,6 +105,7 @@ const sendCode = () => {
       <el-form-item prop="phone">
         <el-input v-model="phoneLoginForm.phone" :placeholder="t('auth.phone')" size="large" autocomplete="off" maxlength="11" />
       </el-form-item>
+      <CaptchaField ref="captchaRef" v-model:captcha-code="phoneLoginForm.captchaCode" />
       <el-form-item prop="code">
         <div class="verification-code-wrapper">
           <el-input v-model="phoneLoginForm.code" :placeholder="t('auth.verificationCode')" size="large" autocomplete="off" maxlength="6" />

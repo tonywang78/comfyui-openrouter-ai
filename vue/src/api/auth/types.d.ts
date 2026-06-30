@@ -3,6 +3,8 @@ export namespace PasswordLoginApi {
     export interface Params {
         account: string
         password: string
+        captchaKey: string
+        captchaCode: string
     }
     
 }
@@ -51,6 +53,8 @@ export namespace ForgotPasswordApi {
 export namespace PhoneVerificationCodeApi {
     export interface Params {
         phone: string
+        captchaKey: string
+        captchaCode: string
     }
 }
 
@@ -58,6 +62,8 @@ export namespace PhoneLoginApi {
     export interface Params {
         phone: string
         code: string
+        captchaKey: string
+        captchaCode: string
     }
 }
 
@@ -91,6 +97,13 @@ export namespace WechatPollApi {
         status: 'pending' | 'success' | 'need_bind'
         token?: string
         bindTicket?: string
+    }
+}
+
+export namespace CaptchaApi {
+    export interface Response {
+        captchaKey: string
+        imageBase64: string
     }
 }
 

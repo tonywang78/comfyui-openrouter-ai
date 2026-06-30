@@ -35,6 +35,9 @@ const phoneRegisterLoading = ref(false)
 const forgotPasswordLoading = ref(false)
 const wechatBindLoading = ref(false)
 
+const loginFormRef = ref<InstanceType<typeof LoginForm> | null>(null)
+const phoneLoginFormRef = ref<InstanceType<typeof PhoneLoginForm> | null>(null)
+
 let logoAnimationInstance: ReturnType<typeof lottie.loadAnimation> | null = null
 
 const initAnimation = () => {
@@ -69,13 +72,20 @@ const finishLogin = async (generation: number) => {
   }
 }
 
-const handleLogin = async (loginForm: { account: string; password: string }) => {
+const handleLogin = async (loginForm: {
+  account: string
+  password: string
+  captchaKey: string
+  captchaCode: string
+}) => {
   const generation = authStore.beginLoginAttempt()
   passwordLoginLoading.value = true
   try {
-    const success = await authStore.passwordLogin(loginForm.account, loginForm.password)
+    const success = await authStore.passwordLogin(loginForm)
     if (success) {
       await finishLogin(generation)
+    } else {
+      loginFormRef.value?.refreshCaptcha()
     }
   } finally {
     passwordLoginLoading.value = false
@@ -108,13 +118,20 @@ const handlePhoneRegister = async (registerForm: { phone: string; code: string; 
   }
 }
 
-const handlePhoneLogin = async (phoneLoginForm: { phone: string; code: string }) => {
+const handlePhoneLogin = async (phoneLoginForm: {
+  phone: string
+  code: string
+  captchaKey: string
+  captchaCode: string
+}) => {
   const generation = authStore.beginLoginAttempt()
   phoneLoginLoading.value = true
   try {
-    const success = await authStore.phoneLogin(phoneLoginForm.phone, phoneLoginForm.code)
+    const success = await authStore.phoneLogin(phoneLoginForm)
     if (success) {
       await finishLogin(generation)
+    } else {
+      phoneLoginFormRef.value?.refreshCaptcha()
     }
   } finally {
     phoneLoginLoading.value = false
@@ -157,8 +174,14 @@ const handleGetLoginCode = async (email: string) => {
   await authStore.getVerificationCode(email)
 }
 
-const handleGetPhoneCode = async (phone: string) => {
-  await authStore.getPhoneVerificationCode(phone)
+const handleGetPhoneCode = async (payload: {
+  phone: string
+  captchaKey: string
+  captchaCode: string
+}) => {
+  const success = await authStore.getPhoneVerificationCode(payload)
+  phoneLoginFormRef.value?.refreshCaptcha()
+  return success
 }
 
 const goRegister = () => {
@@ -192,13 +215,14 @@ watch(viewState, () => {
         <el-tabs v-model="activeTab" class="login-tabs">
           <el-tab-pane :label="t('auth.phoneLogin')" name="phone">
             <PhoneLoginForm
+              ref="phoneLoginFormRef"
               @login-with-code="handlePhoneLogin"
               @send-code="handleGetPhoneCode"
               :loading="phoneLoginLoading"
             />
           </el-tab-pane>
           <el-tab-pane :label="t('auth.passwordLogin')" name="password">
-            <LoginForm @login="handleLogin" :loading="passwordLoginLoading" />
+            <LoginForm ref="loginFormRef" @login="handleLogin" :loading="passwordLoginLoading" />
           </el-tab-pane>
           <el-tab-pane :label="t('auth.wechatLogin')" name="wechat">
             <WeChatLoginPanel

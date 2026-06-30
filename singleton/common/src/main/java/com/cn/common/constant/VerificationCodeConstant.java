@@ -16,4 +16,6 @@ public interface VerificationCodeConstant {
 
     String WECHAT_BIND_KEY_PREFIX = "WECHAT_BIND:";
 
+    String CAPTCHA_KEY_PREFIX = "CAPTCHA:";
+
 }

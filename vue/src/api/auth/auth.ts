@@ -9,11 +9,15 @@ import type {
     PhoneRegisterApi,
     WechatBindPhoneApi,
     WechatLoginStateApi,
-    WechatPollApi
+    WechatPollApi,
+    CaptchaApi
 } from './types'
 import { post, get } from '@/utils/requestUtil'
 
 export const authApi = {
+    reqCaptcha: () => {
+        return get<CaptchaApi.Response>('/auth/captcha')
+    },
     reqPasswordLogin: (params: PasswordLoginApi.Params) => {
         return post<string>('/auth/password-login', params)
     },

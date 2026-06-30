@@ -14,6 +14,7 @@ import com.cn.auth.exceptions.AuthException;
 import com.cn.auth.service.AuthService;
 import com.cn.common.annotations.RateLimit;
 import com.cn.common.msg.Result;
+import com.cn.common.service.CaptchaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -35,6 +36,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+
+    private final CaptchaService captchaService;
+
+    @GetMapping(value = "/captcha", produces = MediaType.APPLICATION_JSON_VALUE)
+    @RateLimit(permitsPerSecond = 1, limitType = RateLimit.LimitType.IP, message = "验证码请求过于频繁，请稍后再试")
+    public Result getCaptcha() {
+        return Result.data(captchaService.generate());
+    }
 
     @PostMapping(value = "/password-login", produces = MediaType.APPLICATION_JSON_VALUE)
     @RateLimit(permitsPerSecond = 0.2, limitType = RateLimit.LimitType.IP, message = "登录过于频繁，请稍后再试")

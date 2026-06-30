@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { authApi } from '@/api/auth/auth'
-import type { RegisterApi, ForgotPasswordApi, PhoneRegisterApi, WechatBindPhoneApi } from '@/api/auth/types'
+import type { RegisterApi, ForgotPasswordApi, PhoneRegisterApi, WechatBindPhoneApi, PasswordLoginApi, PhoneLoginApi, PhoneVerificationCodeApi } from '@/api/auth/types'
 import { ElNotification } from 'element-plus'
 import i18n from '@/i18n'
 import { redirectToLogin } from '@/utils/authRedirect'
@@ -31,9 +31,9 @@ export const useAuthStore = defineStore('auth', () => {
     await userStore.fetchUserInfo()
   }
 
-  async function passwordLogin(account: string, password: string) {
+  async function passwordLogin(params: PasswordLoginApi.Params) {
     try {
-      const tokenValue = await authApi.reqPasswordLogin({ account, password })
+      const tokenValue = await authApi.reqPasswordLogin(params)
       setToken(tokenValue)
       await fetchUserInfoAfterLogin()
       return true
@@ -55,9 +55,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function phoneLogin(phone: string, code: string) {
+  async function phoneLogin(params: PhoneLoginApi.Params) {
     try {
-      const tokenValue = await authApi.reqPhoneLogin({ phone, code })
+      const tokenValue = await authApi.reqPhoneLogin(params)
       setToken(tokenValue)
       await fetchUserInfoAfterLogin()
       return true
@@ -80,9 +80,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function getPhoneVerificationCode(phone: string) {
+  async function getPhoneVerificationCode(params: PhoneVerificationCodeApi.Params) {
     try {
-      await authApi.reqPhoneVerificationCode({ phone })
+      await authApi.reqPhoneVerificationCode(params)
       ElNotification.success({
         title: i18n.global.t('common.success'),
         message: i18n.global.t('auth.phoneCodeSent')

@@ -28,6 +28,7 @@ import com.cn.common.structure.UserInfoStructure;
 import com.cn.common.structure.WechatBindStructure;
 import com.cn.common.structure.WechatStateStructure;
 import com.cn.common.structure.WechatTokenStructure;
+import com.cn.common.service.CaptchaService;
 import com.cn.common.utils.EmailUtil;
 import com.cn.common.utils.RedisUtils;
 import com.cn.common.utils.SmsUtil;
@@ -65,6 +66,8 @@ public class AuthServiceImpl implements AuthService {
 
     private final RedisUtils redisUtils;
 
+    private final CaptchaService captchaService;
+
     @Override
     public void logout() {
         if (StpUtil.isLogin()) {
@@ -84,6 +87,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void getPhoneVerificationCode(final PhoneVerificationCodeDto dto) {
+        validateCaptcha(dto.getCaptchaKey(), dto.getCaptchaCode());
         try {
             smsUtil.send(dto.getPhone());
         } catch (SmsException e) {
@@ -93,6 +97,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String passwordLogin(final PasswordLoginDto dto) {
+        validateCaptcha(dto.getCaptchaKey(), dto.getCaptchaCode());
         final String account = StringUtils.trim(dto.getAccount());
         final String hashedPassword = SaSecureUtil.md5(dto.getPassword());
         final LambdaQueryWrapper<User> wrapper = new QueryWrapper<User>()
@@ -181,6 +186,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String phoneCodeLogin(final PhoneCodeLoginDto dto) {
+        validateCaptcha(dto.getCaptchaKey(), dto.getCaptchaCode());
         final String code = smsUtil.getCode(dto.getPhone());
         if (StringUtils.isBlank(code) || !code.equals(dto.getCode())) {
             throw new AuthException("验证码错误");
@@ -328,6 +334,12 @@ public class AuthServiceImpl implements AuthService {
 
         redisUtils.delKey(WECHAT_BIND_KEY_PREFIX + dto.getBindTicket());
         return loginAndReturnToken(user);
+    }
+
+    private void validateCaptcha(final String captchaKey, final String captchaCode) {
+        if (!captchaService.validateAndConsume(captchaKey, captchaCode)) {
+            throw new AuthException("图形验证码错误或已过期");
+        }
     }
 
     private User findUserByWechat(final String unionid, final String openid) {

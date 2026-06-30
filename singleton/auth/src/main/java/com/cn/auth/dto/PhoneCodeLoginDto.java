@@ -16,4 +16,10 @@ public class PhoneCodeLoginDto {
     @NotEmpty(message = "验证码不能为空")
     private String code;
 
+    @NotEmpty(message = "图形验证码标识不能为空")
+    private String captchaKey;
+
+    @NotEmpty(message = "图形验证码不能为空")
+    private String captchaCode;
+
 }
