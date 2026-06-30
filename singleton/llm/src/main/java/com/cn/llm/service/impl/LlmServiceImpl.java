@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.cn.common.enums.FilePathEnum;
+import com.cn.common.utils.CredentialUtils;
 import com.cn.common.utils.UploadUtil;
 import com.cn.common.utils.RedisUtils;
 import com.cn.llm.config.OpenRouterConfig;
@@ -56,6 +57,7 @@ public class LlmServiceImpl implements LlmService {
     private final RemoteRegistryStore remoteRegistryStore;
     private final UploadUtil uploadUtil;
     private final RedisUtils redisUtils;
+    private final CredentialUtils credentialUtils;
 
     private final ThreadLocal<java.util.List<java.util.Map<String, Object>>> imagesBufferThreadLocal = ThreadLocal.withInitial(java.util.ArrayList::new);
     private final ThreadLocal<java.util.List<java.util.Map<String, Object>>> citationsBufferThreadLocal = ThreadLocal.withInitial(java.util.ArrayList::new);
@@ -65,12 +67,14 @@ public class LlmServiceImpl implements LlmService {
                           RedissonClient redissonClient,
                           RemoteRegistryStore remoteRegistryStore,
                           UploadUtil uploadUtil,
-                          RedisUtils redisUtils) {
+                          RedisUtils redisUtils,
+                          CredentialUtils credentialUtils) {
         this.openRouterConfig = openRouterConfig;
         this.redissonClient = redissonClient;
         this.remoteRegistryStore = remoteRegistryStore;
         this.uploadUtil = uploadUtil;
         this.redisUtils = redisUtils;
+        this.credentialUtils = credentialUtils;
 
         Integer connectTimeout = openRouterConfig.getConnectTimeout();
         Integer readTimeout = openRouterConfig.getReadTimeout();
@@ -323,7 +327,7 @@ public class LlmServiceImpl implements LlmService {
 							 String generateImagesParam,
 							 String token) {
 		// 通过 token 获取用户 ID，同时校验 token 有效性
-		Long currentUserId = com.cn.common.utils.UserUtils.getLoginIdByToken(token);
+		Long currentUserId = credentialUtils.resolveUserId(token);
 		
 		// 验证sessionId是否属于当前用户
 		String sessionOwnerKey = "chat:session:owner:" + sessionId;

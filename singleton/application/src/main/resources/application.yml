@@ -37,6 +37,8 @@ sa-token:
   is-share: true
   is-log: false
   token-style: tik
+api-key:
+  pepper: ${API_KEY_PEPPER:}
 mybatis-plus:
   typeAliasesPackage: com.cn.common.entity
   configuration:

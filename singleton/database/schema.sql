@@ -1,6 +1,30 @@
 -- Full schema snapshot (latest). Used by Docker MySQL initdb.
 -- Incremental history is managed by Flyway: database/migrations/
 
+create table api_key
+(
+    id           bigint auto_increment
+        primary key,
+    user_id      bigint                             not null comment '绑定用户 ID',
+    name         varchar(128)                       not null comment '名称/备注',
+    key_prefix   varchar(12)                        not null comment '密钥前缀，如 ak_a1b2',
+    key_hash     char(64)                           not null comment 'SHA-256(full_key)',
+    status       tinyint  default 1                 not null comment '1=启用 0=禁用',
+    expires_at   datetime                           null comment 'NULL=永不过期',
+    last_used_at datetime                           null,
+    create_time  datetime default CURRENT_TIMESTAMP not null,
+    update_time  datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
+    constraint uk_key_hash
+        unique (key_hash)
+)
+    comment 'API Key 表';
+
+create index idx_api_key_user_id
+    on api_key (user_id);
+
+create index idx_api_key_status
+    on api_key (status);
+
 create table credit_transactions
 (
     id               bigint auto_increment comment '主键ID'

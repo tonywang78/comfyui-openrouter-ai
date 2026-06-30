@@ -7,6 +7,7 @@ import com.cn.comfyui.dto.SubmitTaskDto;
 import com.cn.comfyui.excepitons.ComfyuiException;
 import com.cn.comfyui.service.WorkflowService;
 import com.cn.comfyui.vo.WorkflowsVo;
+import com.cn.common.utils.CredentialUtils;
 import com.cn.common.vo.PageVo;
 import com.cn.llm.config.GenerationAgentConfig;
 import com.cn.llm.config.OpenRouterConfig;
@@ -65,6 +66,7 @@ public class GenerationAgentServiceImpl implements GenerationAgentService {
     private final GenerationToolRegistry toolRegistry;
     private final WorkflowService workflowService;
     private final RedissonClient redissonClient;
+    private final CredentialUtils credentialUtils;
     private final WebClient webClient;
 
     public GenerationAgentServiceImpl(GenerationAgentConfig agentConfig,
@@ -72,13 +74,15 @@ public class GenerationAgentServiceImpl implements GenerationAgentService {
                                       GenerationSessionStore sessionStore,
                                       GenerationToolRegistry toolRegistry,
                                       WorkflowService workflowService,
-                                      RedissonClient redissonClient) {
+                                      RedissonClient redissonClient,
+                                      CredentialUtils credentialUtils) {
         this.agentConfig = agentConfig;
         this.openRouterConfig = openRouterConfig;
         this.sessionStore = sessionStore;
         this.toolRegistry = toolRegistry;
         this.workflowService = workflowService;
         this.redissonClient = redissonClient;
+        this.credentialUtils = credentialUtils;
 
         Integer connectTimeout = openRouterConfig.getConnectTimeout();
         Integer readTimeout = openRouterConfig.getReadTimeout();
@@ -167,7 +171,7 @@ public class GenerationAgentServiceImpl implements GenerationAgentService {
 
     @Override
     public SseEmitter stream(String sessionId, String enableWebSearch, List<Long> pinnedWorkflowIds, String token) {
-        Long currentUserId = com.cn.common.utils.UserUtils.getLoginIdByToken(token);
+        Long currentUserId = credentialUtils.resolveUserId(token);
         if (!sessionStore.isOwner(sessionId, currentUserId)) {
             SseEmitter emitter = new SseEmitter(Duration.ofMinutes(10).toMillis());
             try {

@@ -1,6 +1,6 @@
 package com.cn.comfyui.websocket.handler;
 
-import cn.dev33.satoken.stp.StpUtil;
+import com.cn.common.utils.CredentialUtils;
 import com.alibaba.fastjson2.JSON;
 import com.cn.comfyui.websocket.message.TaskProgressMessage;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 @SuppressWarnings("all")
 public class TaskProgressWebSocketHandler implements WebSocketHandler {
+
+    private final CredentialUtils credentialUtils;
 
     /** 单用户最大连接数（多标签页场景），超出时关闭最旧的连接 */
     private static final int MAX_CONNECTIONS_PER_USER = 5;
@@ -264,11 +266,7 @@ public class TaskProgressWebSocketHandler implements WebSocketHandler {
      */
     private Long validateTokenAndGetUserId(String token) {
         try {
-            // 使用Sa-Token验证token
-            Object loginId = StpUtil.getLoginIdByToken(token);
-            if (loginId != null) {
-                return Long.parseLong(loginId.toString());
-            }
+            return credentialUtils.resolveUserId(token);
         } catch (Exception e) {
             log.debug("Token验证失败: {}", e.getMessage());
         }

@@ -16,6 +16,9 @@
       <el-tab-pane :label="t('system.tabs.announcement')" name="announcement">
         <AnnouncementView />
       </el-tab-pane>
+      <el-tab-pane :label="t('system.tabs.apiKeys')" name="apiKeys">
+        <ApiKeyManagementView />
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -28,6 +31,7 @@ import UserManagementView from './views/UserManagementView.vue'
 import WorkflowManagementView from './views/WorkflowManagementView.vue'
 import RedemptionCodeView from './views/RedemptionCodeView.vue'
 import AnnouncementView from './views/AnnouncementView.vue'
+import ApiKeyManagementView from './views/ApiKeyManagementView.vue'
 
 const { t } = useI18n()
 const activeTab = ref('overview')

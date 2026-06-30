@@ -454,7 +454,8 @@ export default {
       users: 'User Management',
       workflow: 'Workflow Management',
       redemption: 'Redemption Code',
-      announcement: 'Site Announcement'
+      announcement: 'Site Announcement',
+      apiKeys: 'API Key Management'
     },
     overview: {
       title: 'System Overview',
@@ -648,6 +649,72 @@ export default {
         createFailed: 'Create failed',
         saveSuccess: 'Saved successfully',
         saveFailed: 'Save failed'
+      }
+    },
+    apiKeys: {
+      title: 'API Key Management',
+      create: 'Create API Key',
+      search: {
+        keyword: 'Search name or key prefix',
+        status: 'Status',
+        userId: 'User ID',
+        query: 'Search',
+        reset: 'Reset'
+      },
+      table: {
+        id: 'ID',
+        name: 'Name',
+        keyPrefix: 'Key Prefix',
+        user: 'Bound User',
+        status: 'Status',
+        expiresAt: 'Expires At',
+        lastUsedAt: 'Last Used',
+        createTime: 'Created At',
+        actions: 'Actions',
+        edit: 'Edit',
+        rotate: 'Rotate',
+        delete: 'Delete'
+      },
+      status: {
+        enabled: 'Enabled',
+        disabled: 'Disabled'
+      },
+      dialog: {
+        createTitle: 'Create API Key',
+        editTitle: 'Edit API Key',
+        user: 'Bound User',
+        userPlaceholder: 'Search and select a user',
+        name: 'Name',
+        status: 'Status',
+        expiresAt: 'Expires At',
+        expiresAtPlaceholder: 'Select expiration (optional)',
+        cancel: 'Cancel',
+        createBtn: 'Create',
+        saveBtn: 'Save'
+      },
+      plainKey: {
+        title: 'Save Your API Key',
+        warning: 'This key is shown only once. Store it securely before closing this dialog.',
+        copy: 'Copy',
+        copySuccess: 'Copied to clipboard',
+        copyFailed: 'Copy failed, please copy manually',
+        confirm: 'I have saved it'
+      },
+      validation: {
+        userRequired: 'Please select a user',
+        nameRequired: 'Please enter a name'
+      },
+      messages: {
+        loadFailed: 'Failed to load',
+        deleteConfirm: 'Delete this API Key?',
+        deleteSuccess: 'Deleted successfully',
+        deleteFailed: 'Delete failed',
+        createSuccess: 'Created successfully',
+        createFailed: 'Create failed',
+        updateSuccess: 'Updated successfully',
+        updateFailed: 'Update failed',
+        rotateSuccess: 'Rotated successfully',
+        rotateFailed: 'Rotate failed'
       }
     },
     workflow: {

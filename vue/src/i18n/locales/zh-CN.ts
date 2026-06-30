@@ -454,7 +454,8 @@ export default {
       users: '用户管理',
       workflow: '工作流管理',
       redemption: '兑换码管理',
-      announcement: '站点公告'
+      announcement: '站点公告',
+      apiKeys: 'API Key 管理'
     },
     overview: {
       title: '系统概况',
@@ -648,6 +649,72 @@ export default {
         createFailed: '创建失败',
         saveSuccess: '保存成功',
         saveFailed: '保存失败'
+      }
+    },
+    apiKeys: {
+      title: 'API Key 管理',
+      create: '新建 API Key',
+      search: {
+        keyword: '搜索名称或 Key 前缀',
+        status: '状态',
+        userId: '用户 ID',
+        query: '查询',
+        reset: '重置'
+      },
+      table: {
+        id: 'ID',
+        name: '名称',
+        keyPrefix: 'Key 前缀',
+        user: '绑定用户',
+        status: '状态',
+        expiresAt: '过期时间',
+        lastUsedAt: '最后使用',
+        createTime: '创建时间',
+        actions: '操作',
+        edit: '编辑',
+        rotate: '轮换',
+        delete: '删除'
+      },
+      status: {
+        enabled: '启用',
+        disabled: '禁用'
+      },
+      dialog: {
+        createTitle: '新建 API Key',
+        editTitle: '编辑 API Key',
+        user: '绑定用户',
+        userPlaceholder: '搜索并选择用户',
+        name: '名称',
+        status: '状态',
+        expiresAt: '过期时间',
+        expiresAtPlaceholder: '选择过期时间（可选）',
+        cancel: '取消',
+        createBtn: '创建',
+        saveBtn: '保存'
+      },
+      plainKey: {
+        title: '请保存 API Key',
+        warning: '此 Key 仅显示一次，关闭后将无法再次查看完整内容，请妥善保存。',
+        copy: '复制',
+        copySuccess: '已复制到剪贴板',
+        copyFailed: '复制失败，请手动复制',
+        confirm: '我已保存'
+      },
+      validation: {
+        userRequired: '请选择绑定用户',
+        nameRequired: '请输入名称'
+      },
+      messages: {
+        loadFailed: '加载失败',
+        deleteConfirm: '确定删除该 API Key？',
+        deleteSuccess: '删除成功',
+        deleteFailed: '删除失败',
+        createSuccess: '创建成功',
+        createFailed: '创建失败',
+        updateSuccess: '更新成功',
+        updateFailed: '更新失败',
+        rotateSuccess: '轮换成功',
+        rotateFailed: '轮换失败'
       }
     },
     workflow: {
