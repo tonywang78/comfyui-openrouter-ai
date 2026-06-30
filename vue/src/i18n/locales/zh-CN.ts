@@ -57,6 +57,7 @@ export default {
     getCode: '获取验证码',
     sendingCode: '发送中...',
     resendCode: '重新发送',
+    resendIn: '{seconds}s 后重发',
     loginSuccess: '登录成功',
     logoutSuccess: '已成功退出登录',
     registerSuccess: '注册成功，请登录',

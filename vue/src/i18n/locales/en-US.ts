@@ -57,6 +57,7 @@ export default {
     getCode: 'Get Code',
     sendingCode: 'Sending...',
     resendCode: 'Resend',
+    resendIn: 'Resend in {seconds}s',
     loginSuccess: 'Login successful',
     logoutSuccess: 'Logged out successfully',
     registerSuccess: 'Registration successful, please login',

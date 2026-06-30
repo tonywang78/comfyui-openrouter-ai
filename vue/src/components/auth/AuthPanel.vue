@@ -4,10 +4,8 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import emitter, { LOGIN_SUCCESS } from '@/utils/eventBusUtil'
 import LoginForm from './components/LoginForm.vue'
-import RegisterForm from './components/RegisterForm.vue'
 import ForgotPasswordForm from './components/ForgotPasswordForm.vue'
 import PhoneLoginForm from './components/PhoneLoginForm.vue'
-import PhoneRegisterForm from './components/PhoneRegisterForm.vue'
 import WeChatLoginPanel from './components/WeChatLoginPanel.vue'
 import lottie from 'lottie-web'
 import logoAnimation from '@/assets/lottie/logo.json'
@@ -25,13 +23,11 @@ const authStore = useAuthStore()
 const userStore = useUserStore()
 
 const activeTab = ref('phone')
-const viewState = ref<'login' | 'register' | 'phoneRegister' | 'forgotPassword'>('login')
+const viewState = ref<'login' | 'forgotPassword'>('login')
 const logoContainer = ref<HTMLElement | null>(null)
 
 const passwordLoginLoading = ref(false)
 const phoneLoginLoading = ref(false)
-const registerLoading = ref(false)
-const phoneRegisterLoading = ref(false)
 const forgotPasswordLoading = ref(false)
 const wechatBindLoading = ref(false)
 
@@ -92,32 +88,6 @@ const handleLogin = async (loginForm: {
   }
 }
 
-const handleRegister = async (registerForm: { email: string; code: string; password: string }) => {
-  registerLoading.value = true
-  try {
-    const success = await authStore.register(registerForm)
-    if (success) {
-      viewState.value = 'login'
-      activeTab.value = 'password'
-    }
-  } finally {
-    registerLoading.value = false
-  }
-}
-
-const handlePhoneRegister = async (registerForm: { phone: string; code: string; password?: string }) => {
-  phoneRegisterLoading.value = true
-  try {
-    const success = await authStore.phoneRegister(registerForm)
-    if (success) {
-      viewState.value = 'login'
-      activeTab.value = 'phone'
-    }
-  } finally {
-    phoneRegisterLoading.value = false
-  }
-}
-
 const handlePhoneLogin = async (phoneLoginForm: {
   phone: string
   code: string
@@ -174,18 +144,25 @@ const handleGetLoginCode = async (email: string) => {
   await authStore.getVerificationCode(email)
 }
 
-const handleGetPhoneCode = async (payload: {
-  phone: string
-  captchaKey: string
-  captchaCode: string
-}) => {
-  const success = await authStore.getPhoneVerificationCode(payload)
-  phoneLoginFormRef.value?.refreshCaptcha()
-  return success
-}
-
-const goRegister = () => {
-  viewState.value = activeTab.value === 'phone' ? 'phoneRegister' : 'register'
+const handleGetPhoneCode = async (
+  payload:
+    | {
+        phone: string
+        captchaKey: string
+        captchaCode: string
+      }
+    | string,
+  onComplete?: (success: boolean) => void
+) => {
+  const params =
+    typeof payload === 'string'
+      ? { phone: payload, captchaKey: '', captchaCode: '' }
+      : payload
+  const success = await authStore.getPhoneVerificationCode(params)
+  if (typeof payload !== 'string') {
+    phoneLoginFormRef.value?.refreshCaptcha()
+  }
+  onComplete?.(success)
 }
 
 onMounted(() => {
@@ -246,18 +223,6 @@ watch(viewState, () => {
         </div>
       </div>
 
-      <RegisterForm
-        v-else-if="viewState === 'register'"
-        @register="handleRegister"
-        @send-code="handleGetLoginCode"
-        :loading="registerLoading"
-      />
-      <PhoneRegisterForm
-        v-else-if="viewState === 'phoneRegister'"
-        @register="handlePhoneRegister"
-        @send-code="handleGetPhoneCode"
-        :loading="phoneRegisterLoading"
-      />
       <ForgotPasswordForm
         v-else-if="viewState === 'forgotPassword'"
         @reset-password="handlePasswordReset"
@@ -265,18 +230,8 @@ watch(viewState, () => {
         :loading="forgotPasswordLoading"
       />
 
-      <div class="auth-toggle">
-        <span v-if="viewState === 'login'">
-          {{ t('auth.noAccount') }}
-          <el-link type="primary" @click="goRegister">{{ t('auth.registerNow') }}</el-link>
-        </span>
-        <span v-if="viewState === 'register' || viewState === 'phoneRegister'">
-          {{ t('auth.hasAccount') }}
-          <el-link type="primary" @click="viewState = 'login'">{{ t('auth.loginNow') }}</el-link>
-        </span>
-        <span v-if="viewState === 'forgotPassword'">
-          <el-link type="primary" @click="viewState = 'login'">{{ t('auth.backToLogin') }}</el-link>
-        </span>
+      <div v-if="viewState === 'forgotPassword'" class="auth-toggle">
+        <el-link type="primary" @click="viewState = 'login'">{{ t('auth.backToLogin') }}</el-link>
       </div>
     </div>
   </div>

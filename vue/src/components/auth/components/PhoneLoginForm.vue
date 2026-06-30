@@ -4,6 +4,13 @@ import { reactive, ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import TermsAgreement from './TermsAgreement.vue'
 import CaptchaField from './CaptchaField.vue'
+import { useVerificationCodeCountdown } from '@/composables/useVerificationCodeCountdown'
+
+export type PhoneSendCodePayload = {
+  phone: string
+  captchaKey: string
+  captchaCode: string
+}
 
 defineOptions({
   name: 'PhoneLoginForm'
@@ -28,8 +35,12 @@ const agreementChecked = ref(false)
 const formRef = ref()
 const captchaRef = ref<InstanceType<typeof CaptchaField> | null>(null)
 const codeSending = ref(false)
+const { countdown, isCounting, startCountdown } = useVerificationCodeCountdown()
 
-const emit = defineEmits(['login-with-code', 'send-code'])
+const emit = defineEmits<{
+  'login-with-code': [payload: PhoneSendCodePayload & { code: string }]
+  'send-code': [payload: PhoneSendCodePayload, onComplete?: (success: boolean) => void]
+}>()
 
 const rules = computed<FormRules>(() => ({
   phone: [
@@ -69,18 +80,31 @@ const handleLogin = () => {
   })
 }
 
+const sendBtnDisabled = computed(() => codeSending.value || isCounting.value)
+
+const sendBtnText = computed(() => {
+  if (codeSending.value) return t('auth.sendingCode')
+  if (countdown.value > 0) return t('auth.resendIn', { seconds: countdown.value })
+  return t('auth.getCode')
+})
+
 const sendCode = () => {
+  if (sendBtnDisabled.value) return
+
   formRef.value.validateField(['phone', 'captchaCode'], (valid: boolean) => {
-    if (valid) {
-      codeSending.value = true
-      emit('send-code', {
-        phone: phoneLoginForm.phone,
-        ...getCaptchaPayload()
-      })
-      setTimeout(() => {
-        codeSending.value = false
-      }, 2000)
+    if (!valid) return
+
+    codeSending.value = true
+    const payload: PhoneSendCodePayload = {
+      phone: phoneLoginForm.phone,
+      ...getCaptchaPayload()
     }
+    emit('send-code', payload, (success: boolean) => {
+      codeSending.value = false
+      if (success) {
+        startCountdown()
+      }
+    })
   })
 }
 
@@ -112,9 +136,9 @@ defineExpose({
           <div
             class="custom-send-btn"
             @click="sendCode"
-            :class="{ 'is-loading': codeSending }"
+            :class="{ 'is-disabled': sendBtnDisabled }"
           >
-            {{ codeSending ? t('auth.sendingCode') : t('auth.getCode') }}
+            {{ sendBtnText }}
           </div>
         </div>
       </el-form-item>
@@ -162,7 +186,9 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 100px;
+  min-width: 120px;
+  padding: 0 8px;
+  white-space: nowrap;
   height: 40px;
   background-color: var(--el-color-primary);
   color: white;
@@ -172,16 +198,16 @@ defineExpose({
   transition: all 0.3s;
 }
 
-.custom-send-btn.is-loading {
+.custom-send-btn.is-disabled {
   opacity: 0.8;
   cursor: not-allowed;
 }
 
-.custom-send-btn:hover:not(.is-loading) {
+.custom-send-btn:hover:not(.is-disabled) {
   background-color: var(--el-color-primary-light-3);
 }
 
-.custom-send-btn:active:not(.is-loading) {
+.custom-send-btn:active:not(.is-disabled) {
   background-color: var(--el-color-primary-dark-2);
 }
 
