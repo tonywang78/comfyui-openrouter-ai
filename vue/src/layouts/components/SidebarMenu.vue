@@ -69,13 +69,6 @@ const menuSections = computed<MenuSection[]>(() => [
     title: t('layouts.sidebar.menu.sectionAI'),
     items: [
       { 
-        id: 'chat', 
-        title: t('layouts.sidebar.menu.aiChat'), 
-        route: '/ai/chat', 
-        icon: ChatIcon, 
-        badge: t('layouts.sidebar.menu.aiChatBadge')
-      },
-      { 
         id: 'generate', 
         title: t('layouts.sidebar.menu.generateAssistant'), 
         route: '/ai/generate', 
