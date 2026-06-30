@@ -54,6 +54,21 @@
             <el-table-column prop="description" :label="t('system.workflow.table.description')" min-width="260" show-overflow-tooltip />
             <el-table-column prop="categoryName" :label="t('system.workflow.table.category')" width="160" show-overflow-tooltip />
             <el-table-column prop="creditsDeducted" :label="t('system.workflow.table.credits')" width="110" />
+            <el-table-column :label="t('system.workflow.table.published')" width="100">
+              <template #default="{ row }">
+                <el-switch
+                  :model-value="row.published"
+                  @change="(val: boolean) => togglePublish(row, val)"
+                />
+              </template>
+            </el-table-column>
+            <el-table-column :label="t('system.workflow.table.requiredLevel')" width="120">
+              <template #default="{ row }">
+                <el-tag v-if="row.requiredLevel === Role.ADMIN" type="danger" size="small">{{ t('system.workflow.levels.admin') }}</el-tag>
+                <el-tag v-else-if="row.requiredLevel === Role.VIP" type="warning" size="small">{{ t('system.workflow.levels.vip') }}</el-tag>
+                <el-tag v-else type="info" size="small">{{ t('system.workflow.levels.user') }}</el-tag>
+              </template>
+            </el-table-column>
             <el-table-column :label="t('system.workflow.table.actions')" width="200" fixed="right">
               <template #default="{ row }">
                 <el-button link type="primary" :loading="loadingDetailId === row.workflowId" @click="openEditDialog(row)">{{ t('system.workflow.table.edit') }}</el-button>
@@ -126,6 +141,16 @@
               </el-form-item>
               <el-form-item :label="t('system.workflow.dialog.credits')" prop="creditsDeducted">
                 <el-input-number v-model="baseForm.creditsDeducted" :min="0" :max="100000" />
+              </el-form-item>
+              <el-form-item :label="t('system.workflow.dialog.published')">
+                <el-switch v-model="baseForm.published" />
+              </el-form-item>
+              <el-form-item :label="t('system.workflow.dialog.requiredLevel')">
+                <el-select v-model="baseForm.requiredLevel" style="width: 260px">
+                  <el-option :label="t('system.workflow.levels.user')" :value="Role.USER" />
+                  <el-option :label="t('system.workflow.levels.vip')" :value="Role.VIP" />
+                  <el-option :label="t('system.workflow.levels.admin')" :value="Role.ADMIN" />
+                </el-select>
               </el-form-item>
             </el-form>
           </div>
@@ -285,6 +310,7 @@ import type { ParsingWorkflowVo, FormNodeConfig, OutputNodeConfig, WorkflowListI
 import { ossApi } from '@/api/oss/oss'
 import { WorkflowFormTypeEnum, WorkflowResultModelTypeEnum, WorkflowResultModelDigitalEnum } from '@/enums/workflow'
 import { PromptStyleEnum, PROMPT_STYLE_OPTIONS } from '@/enums/promptStyle'
+import { Role } from '@/enums/user'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -305,12 +331,16 @@ const baseForm = reactive<{
   url: string
   workflowCategoryId?: number
   creditsDeducted: number
+  published: boolean
+  requiredLevel: Role
 }>({
   name: '',
   description: '',
   url: '',
   workflowCategoryId: undefined,
-  creditsDeducted: 0
+  creditsDeducted: 0,
+  published: false,
+  requiredLevel: Role.USER
 })
 
 // 创建工作流表单验证规则
@@ -526,6 +556,8 @@ const openEditDialog = async (row: WorkflowListItem) => {
     baseForm.url = detail.url || ''
     baseForm.workflowCategoryId = detail.workflowCategoryId ?? undefined
     baseForm.creditsDeducted = detail.creditsDeducted
+    baseForm.published = detail.published ?? false
+    baseForm.requiredLevel = (detail.requiredLevel as Role) || Role.USER
 
     const savedMap = new Map(detail.savedFormNodeList.map(item => [item.nodeKey, item]))
     applyParsedWorkflow(
@@ -543,6 +575,22 @@ const openEditDialog = async (row: WorkflowListItem) => {
     ElNotification.error(t('system.workflow.messages.loadDetailFailed'))
   } finally {
     loadingDetailId.value = null
+  }
+}
+
+const togglePublish = async (row: WorkflowListItem, published: boolean) => {
+  if (row.workflowCategoryId == null) return
+  try {
+    await workflowApi.updateWorkflow({
+      workflowId: row.workflowId,
+      name: row.name,
+      workflowCategoryId: row.workflowCategoryId,
+      published
+    })
+    row.published = published
+    ElNotification.success(t('system.workflow.messages.publishUpdateSuccess'))
+  } catch (e) {
+    console.error(e)
   }
 }
 
@@ -738,6 +786,8 @@ const handleSave = async () => {
     json: parseResult.json,
     workflowCategoryId: baseForm.workflowCategoryId != null ? String(baseForm.workflowCategoryId) : '1',
     creditsDeducted: baseForm.creditsDeducted,
+    published: baseForm.published,
+    requiredLevel: baseForm.requiredLevel,
     formNodeList: enabledFormNodes.map<FormNodeConfig>(i => ({
       nodeKey: i.nodeKey,
       type: i.type as WorkflowFormTypeEnum,
@@ -796,6 +846,8 @@ const resetAll = () => {
   baseForm.url = ''
   baseForm.workflowCategoryId = undefined
   baseForm.creditsDeducted = 0
+  baseForm.published = false
+  baseForm.requiredLevel = Role.USER
   parseResult.json = ''
   parseResult.allNodeList = []
   parseResult.formNodeList = []

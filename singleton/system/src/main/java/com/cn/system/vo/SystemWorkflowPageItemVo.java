@@ -27,6 +27,10 @@ public class SystemWorkflowPageItemVo {
     private Long workflowCategoryId;
 
     private Long creditsDeducted;
+
+    private Boolean published;
+
+    private String requiredLevel;
 }
 
 

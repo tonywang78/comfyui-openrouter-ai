@@ -7,6 +7,7 @@ export namespace SystemRedemptionApi {
     id: number
     code: string
     creditsAmount: number
+    codeType?: string
     status: 1 | 0 | -1
     usedByUserId: number | null
     usedTime: string | null
@@ -17,6 +18,7 @@ export namespace SystemRedemptionApi {
 
   export type CreateRedemptionCodeDto = {
     creditsAmount: number
+    codeType?: string
     prefix?: string
     length?: number // >= 4
     expireTime?: string // ISO 8601

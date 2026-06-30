@@ -32,6 +32,7 @@
           @change="handleSearch"
         >
           <el-option :label="t('system.users.roles.user')" :value="Role.USER" />
+          <el-option :label="t('system.users.roles.vip')" :value="Role.VIP" />
           <el-option :label="t('system.users.roles.admin')" :value="Role.ADMIN" />
         </el-select>
         <el-button type="primary" @click="handleSearch">
@@ -70,6 +71,7 @@
         <el-table-column :label="t('system.users.table.role')" width="120">
           <template #default="{ row }">
             <el-tag v-if="row.role === Role.ADMIN" type="danger" effect="dark">{{ t('system.users.roles.admin') }}</el-tag>
+            <el-tag v-else-if="row.role === Role.VIP" type="warning" effect="dark">{{ t('system.users.roles.vip') }}</el-tag>
             <el-tag v-else type="info" effect="dark">{{ t('system.users.roles.user') }}</el-tag>
           </template>
         </el-table-column>
@@ -169,6 +171,7 @@
         <el-form-item :label="t('system.users.form.role')" prop="role">
           <el-select v-model="userForm.role" :placeholder="t('system.users.form.rolePlaceholder')" style="width: 100%">
             <el-option :label="t('system.users.roles.user')" :value="Role.USER" />
+            <el-option :label="t('system.users.roles.vip')" :value="Role.VIP" />
             <el-option :label="t('system.users.roles.admin')" :value="Role.ADMIN" />
           </el-select>
         </el-form-item>

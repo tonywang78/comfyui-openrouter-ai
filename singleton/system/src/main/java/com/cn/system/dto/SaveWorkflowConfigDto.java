@@ -52,6 +52,16 @@ public class SaveWorkflowConfigDto {
     private Long creditsDeducted;
 
     /**
+     * 是否发布（新建默认 false）
+     */
+    private Boolean published;
+
+    /**
+     * 所需用户等级：USER / VIP / ADMIN
+     */
+    private String requiredLevel;
+
+    /**
      * 表单节点配置列表
      */
     @Valid

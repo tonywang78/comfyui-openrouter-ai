@@ -15,6 +15,10 @@ import SystemPage from '@/views/system/index.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
+    path: '/login',
+    component: () => import('@/views/auth/login.vue')
+  },
+  {
     path: '/',
     component: MainLayout,
     children: [
@@ -24,8 +28,7 @@ const routes: Array<RouteRecordRaw> = [
       },
       {
         path: 'comfyui',
-        component: ComfyUIPage,
-        meta: { requiresAuth: false }
+        component: ComfyUIPage
       },
       {
         path: 'works',

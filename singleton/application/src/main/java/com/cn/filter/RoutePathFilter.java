@@ -38,14 +38,10 @@ public class RoutePathFilter {
 								"/ws/**",
 								"/llm/chat/stream",
 								"/llm/generation/stream",
-								"/llm/generation/workflows",
 								"/llm/get/available-model/page",
 								"/llm/get/available-model/list",
 								"/llm/get/default-model",
-                                "/notice/get",
-								"/comfyui/task/get/workflow/page",
-								"/comfyui/task/get/workflow/interface",
-								"/comfyui/task/get/workflow-category/list"
+                                "/notice/get"
 						)
 						.check(r -> StpUtil.checkLogin());
 				})

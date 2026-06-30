@@ -1,0 +1,51 @@
+---
+description: 数据库 schema 与 Flyway 迁移规范（singleton/database 为唯一来源）
+globs: singleton/database/**,singleton/.sql/**,singleton/**/entity/**,singleton/application/src/main/resources/application.yml,docker-compose.yml
+alwaysApply: true
+---
+
+# 数据库迁移（Flyway）
+
+## 唯一来源
+
+- **全量 DDL 快照**：[`singleton/database/schema.sql`](singleton/database/schema.sql)
+- **增量迁移**：[`singleton/database/migrations/`](singleton/database/migrations/)
+- 详细说明：[`singleton/database/README.md`](singleton/database/README.md)
+
+**禁止**再新建以下位置的迁移脚本：
+- `singleton/.sql/migration/`（已废弃）
+- `singleton/database/` 根目录下的零散 `*.sql`（已合并进 Flyway）
+
+`docker-compose.yml` MySQL init 挂载 `singleton/database/schema.sql`，勿改回 `.sql/table.sql`。
+
+## 启动时自动执行
+
+后端已集成 Flyway（`application/pom.xml` + `spring.flyway.*`）。脚本由 Maven 打包：`../database/migrations` → `classpath:db/migration`。
+
+| 场景 | 行为 |
+|------|------|
+| 空库 | 执行 `V1__init_schema.sql` |
+| 已有表、无 `flyway_schema_history` | `baseline-on-migrate` baseline v1，不重复建表 |
+| 存在未执行的 `V2+` | 按版本号顺序执行 |
+
+**不要**自研迁移 Runner；**不要**在业务代码里手工跑 SQL 做 schema 变更。
+
+## 新增迁移（Agent 必遵）
+
+1. 在 `singleton/database/migrations/` 新建 `V{n}__{snake_case_desc}.sql`（版本号递增，如 `V2__add_foo_column.sql`）
+2. **同步更新** `singleton/database/schema.sql` 全量快照
+3. SQL 内**不要**写 `ghosts.` 库名前缀（JDBC 已连接 `ghosts`）
+4. 若改表结构，同步改 Java 实体 / DTO（`singleton/common/.../entity/` 等）
+5. 仅增量 DDL；全量建表只维护在 `V1__init_schema.sql` + `schema.sql`，勿把完整 CREATE 写进 V2+
+
+## 禁止事项
+
+- 不要在 Docker init 与 Flyway 各写一套冲突 DDL
+- 不要删除或改已发布 migration 文件名/内容（Flyway checksum 会失败）
+- 不要建议用户手工执行已合并的历史脚本
+
+## 验证
+
+```bash
+docker exec conni-mysql mysql -uconni -p<password> ghosts -e "SELECT version, description, success FROM flyway_schema_history ORDER BY installed_rank;"
+```

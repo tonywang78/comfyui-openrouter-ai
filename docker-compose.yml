@@ -31,7 +31,8 @@ services:
       - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./singleton/.sql/table.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./singleton/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./singleton/database/docker/02-mysql-grants.sql:/docker-entrypoint-initdb.d/02-grants.sql:ro
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci

@@ -36,6 +36,7 @@ import com.cn.common.utils.RedisUtils;
 import com.cn.common.utils.UploadUtil;
 import com.cn.common.utils.UserUtils;
 import com.cn.common.utils.CreditUtils;
+import com.cn.common.utils.WorkflowAccessUtils;
 import com.cn.common.vo.PageVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -497,7 +498,15 @@ public class WorkflowServiceImpl implements WorkflowService {
         if (workflow == null) {
             throw new ComfyuiException("该工作流已下架或不存在");
         }
+        String userRole = getCurrentUserRole();
+        if (!WorkflowAccessUtils.canAccess(userRole, workflow.getPublished(), workflow.getRequiredLevel())) {
+            throw new ComfyuiException("该工作流已下架或不存在");
+        }
         return workflow;
+    }
+
+    private String getCurrentUserRole() {
+        return UserUtils.getCurrentUserInfo().getRole();
     }
 
     @Override
@@ -529,6 +538,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     @Override
     public PageVo<WorkflowsVo> getWorkflowsPage(final String prompt, final Long categoryId, final Long page) {
         final long pageSize = 20;
+        String userRole = getCurrentUserRole();
+        List<String> accessibleLevels = WorkflowAccessUtils.accessibleLevels(userRole);
 
         // 创建查询条件
         QueryWrapper<Workflow> queryWrapper = new QueryWrapper<>();
@@ -542,6 +553,10 @@ public class WorkflowServiceImpl implements WorkflowService {
         if (categoryId != null && categoryId > 0) {
             queryWrapper.lambda().eq(Workflow::getWorkflowCategoryId, categoryId.toString());
         }
+
+        queryWrapper.lambda()
+                .eq(Workflow::getPublished, true)
+                .in(Workflow::getRequiredLevel, accessibleLevels);
         
         // 添加排序
         queryWrapper.lambda().orderByDesc(Workflow::getCreateTime);

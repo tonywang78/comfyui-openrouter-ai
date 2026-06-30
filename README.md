@@ -101,7 +101,7 @@ vue/                     # 前端工程（Vite）
    - `ali.oss.*`（阿里云 OSS）
    - `comfyui.server[*].url`（ComfyUI 服务地址）
    - `open-router.api-key`（OpenRouter API Key）
-2. 若数据库已存在，执行迁移脚本 `singleton/.sql/migration/V20260629_add_phone_wechat.sql` 以添加手机号/微信字段。
+2. 数据库迁移由 Flyway 在应用启动时自动执行，脚本位于 `singleton/database/migrations/`；Docker 首次初始化会使用 `singleton/database/schema.sql`。
 3. 启动（开发模式）：
    ```bash
    mvn -f singleton/pom.xml -pl application -am spring-boot:run -Pdev

@@ -22,6 +22,8 @@ public class UpdateWorkflowDto {
 
     @NotNull(message = "workflowCategoryId 不能为空")
     private Long workflowCategoryId;
+
+    private Boolean published;
 }
 
 

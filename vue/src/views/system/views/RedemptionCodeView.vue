@@ -48,6 +48,11 @@
           <el-table-column prop="id" :label="t('system.redemption.table.id')" width="80" />
           <el-table-column prop="code" :label="t('system.redemption.table.code')" min-width="180" />
           <el-table-column prop="creditsAmount" :label="t('system.redemption.table.credits')" width="100" />
+          <el-table-column :label="t('system.redemption.table.codeType')" width="120">
+            <template #default="{ row }">
+              {{ codeTypeText(row.codeType) }}
+            </template>
+          </el-table-column>
           <el-table-column :label="t('system.redemption.table.status')" width="110">
             <template #default="{ row }">
               <el-tag :type="statusTagType(row.status)">{{ statusText(row.status) }}</el-tag>
@@ -96,6 +101,13 @@
     <!-- 新建对话框 -->
     <el-dialog v-model="createDialog.visible" :title="t('system.redemption.dialog.createTitle')" width="520px" class="rc-dialog" @close="onCreateDialogClose">
       <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-position="top">
+        <el-form-item :label="t('system.redemption.dialog.codeType')" prop="codeType">
+          <el-select v-model="createForm.codeType" style="width: 100%">
+            <el-option :label="t('system.redemption.codeTypes.credits')" :value="RedemptionCodeType.CREDITS" />
+            <el-option :label="t('system.redemption.codeTypes.vip')" :value="RedemptionCodeType.VIP" />
+            <el-option :label="t('system.redemption.codeTypes.creditsVip')" :value="RedemptionCodeType.CREDITS_VIP" />
+          </el-select>
+        </el-form-item>
         <el-form-item :label="t('system.redemption.dialog.credits')" prop="creditsAmount">
           <el-input-number v-model="createForm.creditsAmount" :min="0" controls-position="right" style="width: 100%" />
         </el-form-item>
@@ -189,6 +201,7 @@ import type { SystemRedemptionApi } from '@/api/system-redemption/types'
 import { systemRedemptionApi } from '@/api/system-redemption/system-redemption'
 import { Plus, Search, RefreshRight } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
+import { RedemptionCodeType } from '@/enums/redemption'
 
 const { t } = useI18n()
 
@@ -264,6 +277,12 @@ const statusTagType = (s: 1 | 0 | -1): 'success' | 'warning' | 'info' | 'danger'
   return 'info'
 }
 
+const codeTypeText = (type?: string | null) => {
+  if (type === RedemptionCodeType.VIP) return t('system.redemption.codeTypes.vip')
+  if (type === RedemptionCodeType.CREDITS_VIP) return t('system.redemption.codeTypes.creditsVip')
+  return t('system.redemption.codeTypes.credits')
+}
+
 // Dialogs
 const createDialog = reactive({ visible: false })
 const editDialog = reactive<{ visible: boolean; record: SystemRedemptionApi.SystemRedemptionCodeVo | null }>({ visible: false, record: null })
@@ -300,6 +319,7 @@ onMounted(() => {
 // Create form
 type CreateForm = {
   creditsAmount: number | null
+  codeType: RedemptionCodeType
   prefix?: string
   length?: number | null
   expireTime?: string | null
@@ -308,6 +328,7 @@ type CreateForm = {
 
 const createForm = reactive<CreateForm>({
   creditsAmount: 0,
+  codeType: RedemptionCodeType.CREDITS,
   prefix: '',
   length: 12,
   expireTime: null,
@@ -318,12 +339,19 @@ const createFormRef = ref<FormInstance>()
 const createSubmitting = ref(false)
 
 const createRules = computed<FormRules<CreateForm>>(() => ({
+  codeType: [{ required: true, message: t('system.redemption.validation.codeTypeRequired'), trigger: 'change' }],
   creditsAmount: [
     { required: true, message: t('system.redemption.validation.creditsRequired'), trigger: 'blur' },
     {
       validator: (_r, v, cb) => {
         if (v == null || Number.isNaN(Number(v))) return cb(new Error(t('system.redemption.validation.creditsMustBeNumber')))
         if (Number(v) < 0) return cb(new Error(t('system.redemption.validation.creditsNotNegative')))
+        if (createForm.codeType === RedemptionCodeType.CREDITS && Number(v) <= 0) {
+          return cb(new Error(t('system.redemption.validation.creditsPositiveRequired')))
+        }
+        if (createForm.codeType === RedemptionCodeType.CREDITS_VIP && Number(v) <= 0) {
+          return cb(new Error(t('system.redemption.validation.creditsPositiveRequired')))
+        }
         return cb()
       },
       trigger: 'blur'
@@ -347,6 +375,7 @@ const createRules = computed<FormRules<CreateForm>>(() => ({
 
 const resetCreateForm = () => {
   createForm.creditsAmount = 0
+  createForm.codeType = RedemptionCodeType.CREDITS
   createForm.prefix = ''
   createForm.length = 12
   createForm.expireTime = null
@@ -366,6 +395,7 @@ const onSubmitCreate = () => {
     try {
       await systemRedemptionApi.createCode({
         creditsAmount: Number(createForm.creditsAmount ?? 0),
+        codeType: createForm.codeType,
         prefix: createForm.prefix || undefined,
         length: createForm.length ?? undefined,
         expireTime: createForm.expireTime || undefined,

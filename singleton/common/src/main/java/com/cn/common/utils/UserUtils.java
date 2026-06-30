@@ -31,5 +31,21 @@ public class UserUtils {
         StpUtil.getSession().set(UserConstant.USER_INFO, userInfo);
     }
 
+    public static void syncUserRoleByLoginId(final Long userId, final String role) {
+        if (!StpUtil.isLogin(userId)) {
+            return;
+        }
+        try {
+            UserInfoStructure userInfo = (UserInfoStructure) StpUtil.getSessionByLoginId(userId)
+                    .get(UserConstant.USER_INFO);
+            if (userInfo != null) {
+                userInfo.setRole(role);
+                StpUtil.getSessionByLoginId(userId).set(UserConstant.USER_INFO, userInfo);
+            }
+        } catch (Exception ignored) {
+            // 用户未在线或 session 已过期
+        }
+    }
+
 
 }

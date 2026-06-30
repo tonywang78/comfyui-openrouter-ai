@@ -22,6 +22,8 @@ public class SystemRedemptionCodeVo {
 
 	private Long creditsAmount;
 
+	private String codeType;
+
 	private Integer status;
 
 	private Long usedByUserId;

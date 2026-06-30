@@ -134,7 +134,6 @@ watch(searchParams, () => {
   fetchWorkflows(true);
 });
 
-
 onMounted(() => {
   fetchFilters();
   fetchWorkflows(true);

@@ -25,6 +25,11 @@ public class RedemptionCode {
     private Long creditsAmount;
 
     /**
+     * 兑换码类型：CREDITS / VIP / CREDITS_VIP
+     */
+    private String codeType;
+
+    /**
      * 状态：1-有效 0-已使用 -1-已禁用
      */
     private Integer status;

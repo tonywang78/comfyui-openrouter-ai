@@ -3,12 +3,27 @@ import { defineStore } from 'pinia'
 import { authApi } from '@/api/auth/auth'
 import type { RegisterApi, ForgotPasswordApi, PhoneRegisterApi, WechatBindPhoneApi } from '@/api/auth/types'
 import { ElNotification } from 'element-plus'
-import router from '@/router'
 import i18n from '@/i18n'
+import { redirectToLogin } from '@/utils/authRedirect'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('token') || '')
   const isLoggedIn = computed(() => !!token.value)
+  let loggingOut = false
+  let loginGeneration = 0
+
+  function beginLoginAttempt() {
+    loginGeneration += 1
+    return loginGeneration
+  }
+
+  function isLoginAttemptActive(generation: number) {
+    return !loggingOut && generation === loginGeneration && !!token.value
+  }
+
+  function isAuthTransitioning() {
+    return loggingOut
+  }
 
   async function fetchUserInfoAfterLogin() {
     const { useUserStore } = await import('../modules/user')
@@ -150,65 +165,71 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('token', actualToken)
   }
 
-  async function logout() {
+  async function disconnectTaskWebSocket() {
     try {
-      await authApi.reqLogout()
+      const { useTaskWebSocketStore: useComfyuiTaskProgressWebSocketStore } = await import('./taskWebsocket')
+      useComfyuiTaskProgressWebSocketStore().disconnect()
+    } catch (error) {
+      console.error('断开WebSocket连接失败:', error)
+    }
+  }
 
-      try {
-        const { useTaskWebSocketStore: useComfyuiTaskProgressWebSocketStore } = await import('./taskWebsocket')
-        const webSocketStore = useComfyuiTaskProgressWebSocketStore()
-        webSocketStore.disconnect()
-      } catch (error) {
-        console.error('断开WebSocket连接失败:', error)
+  async function clearSession() {
+    loginGeneration += 1
+    await disconnectTaskWebSocket()
+    token.value = ''
+    localStorage.removeItem('token')
+
+    const { useUserStore } = await import('../modules/user')
+    useUserStore().clearUserInfo()
+  }
+
+  /** 401 拦截器调用：仅清本地会话，不重复请求 logout API、不 reload */
+  async function handleUnauthorized() {
+    if (loggingOut || !token.value) return
+    loggingOut = true
+    try {
+      ElNotification.closeAll()
+      await clearSession()
+      await redirectToLogin()
+    } finally {
+      loggingOut = false
+    }
+  }
+
+  async function logout() {
+    if (loggingOut) return true
+    loggingOut = true
+    ElNotification.closeAll()
+    try {
+      const hadToken = !!token.value
+      if (hadToken) {
+        try {
+          await authApi.reqLogout()
+        } catch {
+          // 会话已失效时忽略
+        }
       }
 
-      token.value = ''
-      localStorage.removeItem('token')
-
-      const { useUserStore } = await import('../modules/user')
-      const userStore = useUserStore()
-      userStore.clearUserInfo()
-
-      ElNotification.success({
-        title: i18n.global.t('common.success'),
-        message: i18n.global.t('auth.logout')
-      })
-
-      await router.replace('/')
-      window.location.reload()
+      await clearSession()
+      await redirectToLogin()
       return true
     } catch (error: any) {
       console.error('退出登录失败:', error)
-
-      try {
-        const { useTaskWebSocketStore: useComfyuiTaskProgressWebSocketStore } = await import('./taskWebsocket')
-        const webSocketStore = useComfyuiTaskProgressWebSocketStore()
-        webSocketStore.disconnect()
-      } catch (disconnectError) {
-        console.error('断开WebSocket连接失败:', disconnectError)
-      }
-
-      token.value = ''
-      localStorage.removeItem('token')
-
-      const { useUserStore } = await import('../modules/user')
-      const userStore = useUserStore()
-      userStore.clearUserInfo()
-
-      ElNotification.warning({
-        title: i18n.global.t('common.warning'),
-        message: i18n.global.t('common.error')
-      })
-
-      await router.replace('/')
-      window.location.reload()
+      await clearSession()
+      await redirectToLogin()
       return false
+    } finally {
+      loggingOut = false
     }
   }
 
   return {
     token,
     isLoggedIn,
+    beginLoginAttempt,
+    isLoginAttemptActive,
+    isAuthTransitioning,
     passwordLogin,
     emailLogin,
     phoneLogin,
@@ -220,6 +241,8 @@ export const useAuthStore = defineStore('auth', () => {
     loginWithToken,
     forgotPassword,
     setToken,
+    clearSession,
+    handleUnauthorized,
     logout
   }
 })

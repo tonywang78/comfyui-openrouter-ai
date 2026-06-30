@@ -19,11 +19,16 @@ import java.time.LocalDateTime;
 public class CreateRedemptionCodeDto {
 
 	/**
-	 * 发放的积分数量
+	 * 发放的积分数量（VIP 类型可为 0）
 	 */
 	@NotNull
-	@Min(1)
+	@Min(0)
 	private Long creditsAmount;
+
+	/**
+	 * 兑换码类型：CREDITS / VIP / CREDITS_VIP
+	 */
+	private String codeType;
 
 	/**
 	 * 可选：自定义前缀（如 RC-）

@@ -54,6 +54,7 @@ export default {
     sendingCode: 'Sending...',
     resendCode: 'Resend',
     loginSuccess: 'Login successful',
+    logoutSuccess: 'Logged out successfully',
     registerSuccess: 'Registration successful, please login',
     resetPasswordSuccess: 'Password reset successful',
     
@@ -509,6 +510,7 @@ export default {
       },
       roles: {
         user: 'User',
+        vip: 'VIP',
         admin: 'Admin'
       },
       form: {
@@ -571,6 +573,7 @@ export default {
         id: 'ID',
         code: 'Redemption Code',
         credits: 'Credits',
+        codeType: 'Type',
         status: 'Status',
         usedBy: 'Used By ID',
         usedTime: 'Used Time',
@@ -586,9 +589,15 @@ export default {
         used: 'Used',
         disabled: 'Disabled'
       },
+      codeTypes: {
+        credits: 'Credits',
+        vip: 'VIP Upgrade',
+        creditsVip: 'Credits + VIP'
+      },
       dialog: {
         createTitle: 'Create Redemption Code',
         editTitle: 'Edit Redemption Code',
+        codeType: 'Code Type',
         credits: 'Credits',
         prefix: 'Prefix',
         prefixPlaceholder: 'Optional, e.g. VIP-',
@@ -606,9 +615,11 @@ export default {
         usedNotEditable: 'Already used, cannot modify'
       },
       validation: {
+        codeTypeRequired: 'Please select code type',
         creditsRequired: 'Please enter credits',
         creditsMustBeNumber: 'Credits must be a number',
         creditsNotNegative: 'Credits cannot be negative',
+        creditsPositiveRequired: 'Credits must be greater than 0 for this code type',
         prefixMaxLength: 'Prefix cannot exceed 16 characters',
         lengthRequired: 'Please enter length',
         lengthNotEmpty: 'Length cannot be empty',
@@ -646,6 +657,8 @@ export default {
         description: 'Description',
         category: 'Category',
         credits: 'Credits Deducted',
+        published: 'Published',
+        requiredLevel: 'Required Level',
         actions: 'Actions',
         edit: 'Edit',
         delete: 'Delete'
@@ -666,6 +679,8 @@ export default {
         category: 'Category',
         categoryPlaceholder: 'Select category',
         credits: 'Credits Deducted',
+        published: 'Published',
+        requiredLevel: 'Required User Level',
         parseWorkflow: 'Upload and Parse Workflow JSON',
         chooseFile: 'Choose File',
         parsed: 'Parsed',
@@ -726,6 +741,11 @@ export default {
         video: 'Video',
         audio: 'Audio'
       },
+      levels: {
+        user: 'User',
+        vip: 'VIP',
+        admin: 'Admin'
+      },
       validation: {
         nameRequired: 'Please enter workflow name',
         nameLength: 'Name length between 1 and 100 characters',
@@ -745,6 +765,7 @@ export default {
         deleteTitle: 'Delete Confirmation',
         deleteSuccess: 'Deleted successfully',
         updateSuccess: 'Updated successfully',
+        publishUpdateSuccess: 'Publish status updated',
         loadDetailFailed: 'Failed to load workflow details',
         saveSuccess: 'Workflow configuration saved successfully',
         categoryCreateSuccess: 'Category created successfully',

@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cn.common.entity.User;
 import com.cn.common.enums.RoleEnum;
 import com.cn.common.mapper.UserMapper;
+import com.cn.common.utils.UserUtils;
 import com.cn.common.vo.PageVo;
 import com.cn.system.dto.*;
 import com.cn.system.service.SystemUserService;
@@ -59,13 +60,16 @@ public class SystemUserServiceImpl implements SystemUserService {
         if (count > 0) {
             throw new IllegalArgumentException("该邮箱已被注册");
         }
+
+        String role = StringUtils.defaultIfBlank(dto.getRole(), RoleEnum.USER.getDesc());
+        validateRole(role);
         
         User user = new User()
                 .setEmail(dto.getEmail())
                 .setPassword(SaSecureUtil.md5(dto.getPassword()))
                 .setNickname(StringUtils.defaultIfBlank(dto.getNickname(), dto.getEmail()))
                 .setAvatar(dto.getAvatar())
-                .setRole(StringUtils.defaultIfBlank(dto.getRole(), RoleEnum.USER.getDesc()));
+                .setRole(role);
         userMapper.insert(user);
         return user.getId();
     }
@@ -80,13 +84,42 @@ public class SystemUserServiceImpl implements SystemUserService {
         if (StringUtils.isNotBlank(dto.getEmail())) user.setEmail(dto.getEmail());
         if (StringUtils.isNotBlank(dto.getNickname())) user.setNickname(dto.getNickname());
         if (StringUtils.isNotBlank(dto.getAvatar())) user.setAvatar(dto.getAvatar());
+        if (StringUtils.isNotBlank(dto.getRole())) {
+            validateRole(dto.getRole());
+            if (RoleEnum.ADMIN.getDesc().equals(user.getRole())
+                    && !RoleEnum.ADMIN.getDesc().equals(dto.getRole())) {
+                ensureNotLastAdmin(user.getId());
+            }
+            user.setRole(dto.getRole());
+        }
         userMapper.updateById(user);
+        if (StringUtils.isNotBlank(dto.getRole())) {
+            UserUtils.syncUserRoleByLoginId(user.getId(), user.getRole());
+        }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(DeleteUserDto dto) {
         userMapper.deleteById(dto.getId());
+    }
+
+    private void validateRole(final String role) {
+        if (!RoleEnum.isValid(role)) {
+            throw new IllegalArgumentException("无效的用户角色: " + role);
+        }
+    }
+
+    private void ensureNotLastAdmin(final Long userId) {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getRole, RoleEnum.ADMIN.getDesc());
+        Long adminCount = userMapper.selectCount(wrapper);
+        if (adminCount <= 1) {
+            User current = userMapper.selectById(userId);
+            if (current != null && RoleEnum.ADMIN.getDesc().equals(current.getRole())) {
+                throw new IllegalArgumentException("不能降级最后一个管理员账号");
+            }
+        }
     }
 
     private SystemUserVo toVo(User u) {
@@ -99,4 +132,4 @@ public class SystemUserServiceImpl implements SystemUserService {
                 .setCreateTime(u.getCreateTime())
                 .setUpdateTime(u.getUpdateTime());
     }
-} 
+}

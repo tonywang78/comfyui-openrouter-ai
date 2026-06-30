@@ -9,6 +9,7 @@ import com.cn.common.entity.WorkflowOutput;
 import com.cn.common.enums.ComfyuiFormTypeEnum;
 import com.cn.common.enums.ComfyuiInputFieldEnum;
 import com.cn.common.enums.PromptStyleEnum;
+import com.cn.common.enums.RoleEnum;
 import com.cn.common.exceptions.UniversalException;
 import com.cn.common.enums.RequiredEnum;
 import com.cn.common.mapper.WorkflowFormMapper;
@@ -305,7 +306,10 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
                 .setUrl(normalizeOssStorageValue(dto.getUrl()))
                 .setJson(dto.getJson())
                 .setWorkflowCategoryId(dto.getWorkflowCategoryId())
-                .setCreditsDeducted(dto.getCreditsDeducted());
+                .setCreditsDeducted(dto.getCreditsDeducted())
+                .setPublished(Boolean.TRUE.equals(dto.getPublished()))
+                .setRequiredLevel(org.apache.commons.lang3.StringUtils.defaultIfBlank(
+                        dto.getRequiredLevel(), RoleEnum.USER.getDesc()));
         
         workflowMapper.insert(workflow);
         Long workflowId = workflow.getId();
@@ -371,6 +375,8 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
                 .setJson(parsed.getJson())
                 .setWorkflowCategoryId(categoryId)
                 .setCreditsDeducted(workflow.getCreditsDeducted())
+                .setPublished(workflow.getPublished())
+                .setRequiredLevel(workflow.getRequiredLevel())
                 .setAllNodeList(parsed.getAllNodeList())
                 .setFormNodeList(parsed.getFormNodeList())
                 .setSavedFormNodeList(savedFormNodes)
@@ -392,7 +398,10 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
                 .setUrl(normalizeOssStorageValue(dto.getUrl()))
                 .setJson(dto.getJson())
                 .setWorkflowCategoryId(dto.getWorkflowCategoryId())
-                .setCreditsDeducted(dto.getCreditsDeducted());
+                .setCreditsDeducted(dto.getCreditsDeducted())
+                .setPublished(Boolean.TRUE.equals(dto.getPublished()))
+                .setRequiredLevel(org.apache.commons.lang3.StringUtils.defaultIfBlank(
+                        dto.getRequiredLevel(), RoleEnum.USER.getDesc()));
         workflowMapper.updateById(workflow);
 
         workflowFormMapper.delete(new QueryWrapper<WorkflowForm>().lambda()
@@ -468,7 +477,9 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
                         .setUrl(uploadUtil.toSignedUrl(w.getUrl()))
                         .setCategoryName(catNameMap.getOrDefault(w.getWorkflowCategoryId(), null))
                         .setWorkflowCategoryId(parseCategoryId(w.getWorkflowCategoryId()))
-                        .setCreditsDeducted(w.getCreditsDeducted()))
+                        .setCreditsDeducted(w.getCreditsDeducted())
+                        .setPublished(w.getPublished())
+                        .setRequiredLevel(w.getRequiredLevel()))
                 .collect(Collectors.toList());
 
         return new PageVo<SystemWorkflowPageItemVo>().setTotal(total).setItems(items);
@@ -483,6 +494,9 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
         }
         w.setName(dto.getName());
         w.setWorkflowCategoryId(String.valueOf(dto.getWorkflowCategoryId()));
+        if (dto.getPublished() != null) {
+            w.setPublished(dto.getPublished());
+        }
         workflowMapper.updateById(w);
     }
 

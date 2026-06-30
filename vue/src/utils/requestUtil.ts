@@ -1,11 +1,11 @@
 import axios from 'axios'
 import type { AxiosRequestConfig, AxiosResponse } from 'axios'
 import { ElNotification } from 'element-plus'
-import router from '../router'
 import { HttpStatus } from '../constants/http-status/httpStatus'
 import { isSuccessResponse } from '../constants/http-status/helps'
 import i18n from '@/i18n'
 import { getApiBaseUrl } from '@/config/runtime'
+import { useAuthStore } from '@/stores/modules/auth'
 
 // 响应结果接口
 interface HttpResponse<T = any> {
@@ -48,6 +48,15 @@ class NetworkError extends Error {
   }
 }
 
+/** 401 时仅处理与当前 token 一致的请求，避免旧请求误清新登录会话 */
+function shouldHandleUnauthorized(config?: AxiosRequestConfig): boolean {
+  const currentToken = localStorage.getItem('token') || ''
+  if (!currentToken) return false
+  const snapshot = (config as AxiosRequestConfig & { _tokenSnapshot?: string })?._tokenSnapshot
+  if (snapshot && snapshot !== currentToken) return false
+  return true
+}
+
 // 请求拦截器
 service.interceptors.request.use(
   (config) => {
@@ -65,6 +74,7 @@ service.interceptors.request.use(
     
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
+      ;(config as AxiosRequestConfig & { _tokenSnapshot?: string })._tokenSnapshot = token
       console.log('添加Authorization头:', `Bearer ${token}`)
     } else {
       console.warn('请求未携带token - localStorage中无token')
@@ -94,17 +104,15 @@ export function setupResponseInterceptors(logout: () => Promise<any>) {
       if (isSuccessResponse(res.code)) {
         return response
       } else if (res.code === HttpStatus.UNAUTHORIZED) {
-        // 使用后端返回的消息
-        ElNotification.warning({
-          message: res.msg || t('utils.request.unauthorizedWarning'),
-          duration: 3000,
-        })
+        const authStore = useAuthStore()
+        if (shouldHandleUnauthorized(response.config) && !authStore.isAuthTransitioning()) {
+          ElNotification.warning({
+            message: res.msg || t('utils.request.unauthorizedWarning'),
+            duration: 3000,
+          })
+          logout()
+        }
         
-        // 调用登出函数
-        logout()
-        
-        // 跳转到首页
-        router.push('/')
         return Promise.reject(new Error(res.msg || t('utils.request.unauthorized')))
       } else {
         // 其他错误情况，使用后端返回的消息
@@ -135,6 +143,14 @@ export function setupResponseInterceptors(logout: () => Promise<any>) {
       // 如果有响应对象，尝试从中获取错误信息
       if (error.response) {
         const { status, statusText, data } = error.response
+        const authStore = useAuthStore()
+
+        if (
+          status === HttpStatus.UNAUTHORIZED &&
+          (authStore.isAuthTransitioning() || !shouldHandleUnauthorized(error.config))
+        ) {
+          return Promise.reject(error)
+        }
         
         // 尝试获取详细错误信息
         if (data && data.msg) {
@@ -147,9 +163,12 @@ export function setupResponseInterceptors(logout: () => Promise<any>) {
               break
             case HttpStatus.UNAUTHORIZED:
               errorMessage = t('utils.request.unauthorized')
-              // 登出处理
-              logout()
-              router.push('/')
+              {
+                const authStore = useAuthStore()
+                if (shouldHandleUnauthorized(error.config) && !authStore.isAuthTransitioning()) {
+                  logout()
+                }
+              }
               break
             case HttpStatus.FORBIDDEN:
               errorMessage = `${t('utils.request.forbidden')} (${status}: ${statusText})`

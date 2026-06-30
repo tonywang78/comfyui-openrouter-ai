@@ -7,6 +7,7 @@ export enum TransactionType {
 } 
 
 export enum Role {
-    USER = "USER", // 用户
+    USER = "USER", // 普通用户
+    VIP = "VIP", // VIP 用户
     ADMIN = "ADMIN" // 管理员
 } 

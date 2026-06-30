@@ -49,9 +49,29 @@
             <artifactId>system</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>../database/migrations</directory>
+                <targetPath>db/migration</targetPath>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -60,6 +80,7 @@
                 <configuration>
                     <skip>false</skip>
                     <mainClass>com.cn.Application</mainClass>
+                    <addResources>false</addResources>
                     <jvmArguments>-Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8</jvmArguments>
                     <excludes>
                         <exclude>

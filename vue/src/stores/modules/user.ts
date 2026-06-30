@@ -147,21 +147,34 @@ export const useUserStore = defineStore('user', () => {
   }
   
   // 登录成功后的处理逻辑
-  async function handleLoginSuccess() {
+  async function handleLoginSuccess(redirect = '/comfyui') {
+    const authStore = useAuthStore()
+    if (!authStore.isLoggedIn || authStore.isAuthTransitioning()) return false
+
     try {
-      // 获取用户信息
-      const userInfoData = await fetchUserInfo()
-      if (userInfoData) {
-        console.log('登录成功，用户信息获取完成，即将刷新页面')
-        // 延迟刷新，显示成功提示
-        setTimeout(() => {
-          window.location.reload()
-        }, 1000)
-        return true
+      const router = (await import('@/router')).default
+      const target = redirect.startsWith('/') ? redirect : '/comfyui'
+      await router.replace(target)
+
+      if (!authStore.isLoggedIn || authStore.isAuthTransitioning()) return false
+
+      Promise.all([
+        userInfo.value ? Promise.resolve(userInfo.value) : fetchUserInfo(),
+        fetchUserCredits()
+      ]).catch((error) => {
+        console.error('登录后刷新用户数据失败:', error)
+      })
+
+      const { useTaskWebSocketStore } = await import('./taskWebsocket')
+      if (authStore.token) {
+        useTaskWebSocketStore().connect(authStore.token).catch((error) => {
+          console.error('登录后 WebSocket 连接失败:', error)
+        })
       }
-      return false
+
+      return true
     } catch (error) {
-      console.error('登录成功后处理失败:', error)
+      console.error('登录成功后跳转失败:', error)
       return false
     }
   }

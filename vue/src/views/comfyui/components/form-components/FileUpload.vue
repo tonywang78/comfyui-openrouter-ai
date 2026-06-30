@@ -83,7 +83,7 @@ import type {  UploadFiles, UploadRequestOptions } from 'element-plus'
 import { ossApi } from '@/api/oss/oss'
 import { WorkflowFormTypeEnum } from '@/enums'
 import { useAuthStore } from '@/stores'
-import emitter, { OPEN_AUTH_DIALOG } from '@/utils/eventBusUtil'
+import { redirectToLogin } from '@/utils/authRedirect'
 
 interface Props {
   formItem: {
@@ -288,7 +288,7 @@ const handleUploadClick = (event: Event) => {
     // 未登录，阻止默认行为并触发登录弹窗
     event.preventDefault()
     event.stopPropagation()
-    emitter.emit(OPEN_AUTH_DIALOG)
+    redirectToLogin()
     return false
   }
   

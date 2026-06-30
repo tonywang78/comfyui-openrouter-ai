@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cn.common.entity.RedemptionCode;
 import com.cn.common.enums.RedemptionCodeStatus;
+import com.cn.common.enums.RedemptionCodeTypeEnum;
 import com.cn.common.mapper.RedemptionCodeMapper;
 import com.cn.common.utils.RedemptionCodeGenerator;
 import com.cn.common.vo.PageVo;
@@ -56,13 +57,28 @@ public class SystemRedemptionCodeServiceImpl implements SystemRedemptionCodeServ
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public Long create(CreateRedemptionCodeDto dto) {
+		String codeType = org.apache.commons.lang3.StringUtils.defaultIfBlank(
+				dto.getCodeType(), RedemptionCodeTypeEnum.CREDITS.getDesc());
+		if (!RedemptionCodeTypeEnum.isValid(codeType)) {
+			throw new IllegalArgumentException("无效的兑换码类型: " + codeType);
+		}
+		RedemptionCodeTypeEnum typeEnum = RedemptionCodeTypeEnum.fromDesc(codeType);
+		long credits = dto.getCreditsAmount() == null ? 0L : dto.getCreditsAmount();
+		if (typeEnum == RedemptionCodeTypeEnum.CREDITS && credits <= 0) {
+			throw new IllegalArgumentException("积分兑换码的积分数量必须大于 0");
+		}
+		if (typeEnum == RedemptionCodeTypeEnum.CREDITS_VIP && credits <= 0) {
+			throw new IllegalArgumentException("积分+VIP 兑换码的积分数量必须大于 0");
+		}
+
 		String prefix = StringUtils.trimToEmpty(dto.getPrefix());
 		int len = dto.getLength() == null ? 8 : Math.max(4, dto.getLength());
 		String code = StringUtils.isBlank(prefix) ? RedemptionCodeGenerator.generateCode(len) : RedemptionCodeGenerator.generateCodeWithPrefix(prefix, len);
 
 		RedemptionCode entity = new RedemptionCode()
 				.setCode(code.toUpperCase())
-				.setCreditsAmount(dto.getCreditsAmount())
+				.setCreditsAmount(credits)
+				.setCodeType(codeType)
 				.setStatus(RedemptionCodeStatus.ACTIVE.getCode())
 				.setExpireTime(dto.getExpireTime())
 				.setDescription(dto.getDescription());
@@ -123,6 +139,7 @@ public class SystemRedemptionCodeServiceImpl implements SystemRedemptionCodeServ
 				.setId(rc.getId())
 				.setCode(rc.getCode())
 				.setCreditsAmount(rc.getCreditsAmount())
+				.setCodeType(rc.getCodeType())
 				.setStatus(rc.getStatus())
 				.setUsedByUserId(rc.getUsedByUserId())
 				.setUsedTime(rc.getUsedTime())

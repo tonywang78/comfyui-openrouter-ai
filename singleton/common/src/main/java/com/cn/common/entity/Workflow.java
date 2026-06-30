@@ -26,6 +26,10 @@ public class Workflow {
 
   private Long creditsDeducted;
 
+  private Boolean published;
+
+  private String requiredLevel;
+
   @TableField(fill = FieldFill.INSERT)
   private LocalDateTime createTime;
 

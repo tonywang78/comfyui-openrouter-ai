@@ -54,6 +54,7 @@ export default {
     sendingCode: '发送中...',
     resendCode: '重新发送',
     loginSuccess: '登录成功',
+    logoutSuccess: '已成功退出登录',
     registerSuccess: '注册成功，请登录',
     resetPasswordSuccess: '密码重置成功',
     
@@ -509,6 +510,7 @@ export default {
       },
       roles: {
         user: '普通用户',
+        vip: 'VIP 用户',
         admin: '管理员'
       },
       form: {
@@ -571,6 +573,7 @@ export default {
         id: 'ID',
         code: '兑换码',
         credits: '积分',
+        codeType: '类型',
         status: '状态',
         usedBy: '使用者ID',
         usedTime: '使用时间',
@@ -586,9 +589,15 @@ export default {
         used: '已使用',
         disabled: '已禁用'
       },
+      codeTypes: {
+        credits: '积分',
+        vip: 'VIP 升级',
+        creditsVip: '积分 + VIP'
+      },
       dialog: {
         createTitle: '新建兑换码',
         editTitle: '编辑兑换码',
+        codeType: '兑换码类型',
         credits: '积分',
         prefix: '前缀',
         prefixPlaceholder: '可选，如 VIP-',
@@ -606,9 +615,11 @@ export default {
         usedNotEditable: '已使用，不可修改'
       },
       validation: {
+        codeTypeRequired: '请选择兑换码类型',
         creditsRequired: '请输入积分',
         creditsMustBeNumber: '积分必须为数字',
         creditsNotNegative: '积分不能小于0',
+        creditsPositiveRequired: '该类型兑换码积分必须大于 0',
         prefixMaxLength: '前缀不超过16字符',
         lengthRequired: '请输入长度',
         lengthNotEmpty: '长度不能为空',
@@ -646,6 +657,8 @@ export default {
         description: '描述',
         category: '类别',
         credits: '扣除积分',
+        published: '发布',
+        requiredLevel: '所需等级',
         actions: '操作',
         edit: '编辑',
         delete: '删除'
@@ -666,6 +679,8 @@ export default {
         category: '类别',
         categoryPlaceholder: '选择类别',
         credits: '扣除积分',
+        published: '是否发布',
+        requiredLevel: '所需用户等级',
         parseWorkflow: '上传并解析工作流 JSON',
         chooseFile: '选择文件',
         parsed: '已解析',
@@ -726,6 +741,11 @@ export default {
         video: '视频',
         audio: '音频'
       },
+      levels: {
+        user: '普通',
+        vip: 'VIP',
+        admin: '管理员'
+      },
       validation: {
         nameRequired: '请输入工作流名称',
         nameLength: '名称长度在 1 到 100 个字符',
@@ -745,6 +765,7 @@ export default {
         deleteTitle: '删除确认',
         deleteSuccess: '删除成功',
         updateSuccess: '更新成功',
+        publishUpdateSuccess: '发布状态已更新',
         loadDetailFailed: '加载工作流详情失败',
         saveSuccess: '工作流配置保存成功',
         categoryCreateSuccess: '类别创建成功',

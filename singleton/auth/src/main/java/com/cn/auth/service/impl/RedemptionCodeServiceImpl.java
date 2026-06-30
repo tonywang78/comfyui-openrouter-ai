@@ -5,8 +5,12 @@ import com.cn.auth.dto.RedeemCodeDto;
 import com.cn.auth.exceptions.RedemptionCodeException;
 import com.cn.auth.service.RedemptionCodeService;
 import com.cn.common.entity.RedemptionCode;
+import com.cn.common.entity.User;
 import com.cn.common.enums.RedemptionCodeStatus;
+import com.cn.common.enums.RedemptionCodeTypeEnum;
+import com.cn.common.enums.RoleEnum;
 import com.cn.common.mapper.RedemptionCodeMapper;
+import com.cn.common.mapper.UserMapper;
 import com.cn.common.structure.UserInfoStructure;
 import com.cn.common.utils.CreditUtils;
 import com.cn.common.utils.UserUtils;
@@ -33,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 public class RedemptionCodeServiceImpl implements RedemptionCodeService {
 
     private final RedemptionCodeMapper redemptionCodeMapper;
+    private final UserMapper userMapper;
     private final CreditUtils creditUtils;
     private final RedissonClient redissonClient;
 
@@ -63,6 +68,8 @@ public class RedemptionCodeServiceImpl implements RedemptionCodeService {
                     throw new RedemptionCodeException("兑换码不存在");
                 }
 
+                RedemptionCodeTypeEnum codeType = RedemptionCodeTypeEnum.fromDesc(redemptionCode.getCodeType());
+
                 // 2. 检查兑换码状态
                 RedemptionCodeStatus status = RedemptionCodeStatus.fromCode(redemptionCode.getStatus());
                 if (status == null || !status.isActive()) {
@@ -87,30 +94,46 @@ public class RedemptionCodeServiceImpl implements RedemptionCodeService {
                     throw new RedemptionCodeException("您已经兑换过该兑换码");
                 }
 
-                // 5. 发放积分
-                String description = "兑换码兑换：" + code;
-                if (redemptionCode.getDescription() != null && !redemptionCode.getDescription().isEmpty()) {
-                    description += " - " + redemptionCode.getDescription();
+                // 5. VIP 升级
+                if (codeType.grantsVip()) {
+                    User user = userMapper.selectById(userId);
+                    if (user != null && RoleEnum.USER.getDesc().equals(user.getRole())) {
+                        user.setRole(RoleEnum.VIP.getDesc());
+                        userMapper.updateById(user);
+                        userInfo.setRole(RoleEnum.VIP.getDesc());
+                        UserUtils.updateUserInfo(userInfo);
+                        log.info("用户 {} 通过兑换码 {} 升级为 VIP", userId, code);
+                    }
                 }
 
-                boolean rechargeSuccess = creditUtils.rechargeCredits(
-                    userId, 
-                    redemptionCode.getCreditsAmount(), 
-                    description
-                );
+                // 6. 发放积分
+                if (codeType.grantsCredits() && redemptionCode.getCreditsAmount() != null
+                        && redemptionCode.getCreditsAmount() > 0) {
+                    String description = "兑换码兑换：" + code;
+                    if (redemptionCode.getDescription() != null && !redemptionCode.getDescription().isEmpty()) {
+                        description += " - " + redemptionCode.getDescription();
+                    }
 
-                if (!rechargeSuccess) {
-                    throw new RedemptionCodeException("积分发放失败，请重试");
+                    boolean rechargeSuccess = creditUtils.rechargeCredits(
+                        userId, 
+                        redemptionCode.getCreditsAmount(), 
+                        description
+                    );
+
+                    if (!rechargeSuccess) {
+                        throw new RedemptionCodeException("积分发放失败，请重试");
+                    }
                 }
 
-                // 6. 更新兑换码状态
+                // 7. 更新兑换码状态
                 redemptionCode.setStatus(RedemptionCodeStatus.USED.getCode())
                     .setUsedByUserId(userId)
                     .setUsedTime(LocalDateTime.now());
                 redemptionCodeMapper.updateById(redemptionCode);
 
-                // 7. 兑换成功，记录日志
-                log.info("用户 {} 成功兑换兑换码 {}, 获得积分: {}", userId, code, redemptionCode.getCreditsAmount());
+                // 8. 兑换成功，记录日志
+                log.info("用户 {} 成功兑换兑换码 {}, 类型: {}, 积分: {}", userId, code, codeType.getDesc(),
+                        redemptionCode.getCreditsAmount());
 
             } finally {
                 lock.unlock();
@@ -120,4 +143,4 @@ public class RedemptionCodeServiceImpl implements RedemptionCodeService {
             throw new RedemptionCodeException("兑换被中断，请重试");
         }
     }
-} 
+}

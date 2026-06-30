@@ -30,6 +30,8 @@ export interface SaveWorkflowConfigDto {
   json: string
   workflowCategoryId?: string
   creditsDeducted: number
+  published?: boolean
+  requiredLevel?: string
   formNodeList: FormNodeConfig[]
   outputNodeList: OutputNodeConfig[]
 }
@@ -46,6 +48,8 @@ export interface WorkflowDetailVo {
   json: string
   workflowCategoryId?: number
   creditsDeducted: number
+  published?: boolean
+  requiredLevel?: string
   allNodeList: ParsingWorkflowVo['allNodeList']
   formNodeList: ParsingWorkflowVo['formNodeList']
   savedFormNodeList: {
@@ -91,6 +95,8 @@ export interface WorkflowListItem {
   categoryName: string
   workflowCategoryId?: number
   creditsDeducted: number
+  published?: boolean
+  requiredLevel?: string
   url?: string
 }
 
@@ -104,6 +110,7 @@ export interface UpdateWorkflowDto {
   workflowId: number
   name: string
   workflowCategoryId: number
+  published?: boolean
 }
 
 // Delete workflow dto

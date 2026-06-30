@@ -8,13 +8,9 @@ export const pinia = createPinia()
 
 // 延迟设置响应拦截器的函数
 export function setupStoreInterceptors() {
-  setupResponseInterceptors(async () => {
+  setupResponseInterceptors(() => {
     const authStore = useAuthStore()
-    const userStore = useUserStore()
-    
-    // 先清除用户信息，再执行登出
-    userStore.clearUserInfo()
-    authStore.logout()
+    return authStore.handleUnauthorized()
   })
 }
 

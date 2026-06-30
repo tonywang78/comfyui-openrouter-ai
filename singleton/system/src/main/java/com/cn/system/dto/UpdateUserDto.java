@@ -23,4 +23,6 @@ public class UpdateUserDto {
     private String nickname;
 
     private String avatar;
+
+    private String role;
 } 

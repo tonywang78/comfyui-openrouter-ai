@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Fold, Expand } from '@element-plus/icons-vue'
-import emitter, { OPEN_AUTH_DIALOG, OPEN_NOTICE_ANNOUNCER } from '@/utils/eventBusUtil'
+import emitter, { OPEN_NOTICE_ANNOUNCER } from '@/utils/eventBusUtil'
 import { useClientLayout } from '@/composables/useClientLayout'
 
 import SidebarLogo from './components/SidebarLogo.vue'
@@ -11,12 +11,12 @@ import SidebarMenu from './components/SidebarMenu.vue'
 import SidebarFooter from './components/SidebarFooter.vue'
 import MobileTabBar from './components/MobileTabBar.vue'
 import TopNavbar from './components/TopNavbar.vue'
-import AuthDialog from '@/components/auth/AuthDialog.vue'
 import RedemptionCodeDialog from '@/components/common/RedemptionCodeDialog.vue'
 import NoticeAnnouncer from '@/components/notice/NoticeAnnouncer.vue'
 
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const { isMobile } = useClientLayout()
 
 const SIDEBAR_COLLAPSED_KEY = 'main-sidebar-collapsed'
@@ -49,7 +49,7 @@ onBeforeUnmount(() => {
 })
 
 const handleLogin = () => {
-  emitter.emit(OPEN_AUTH_DIALOG)
+  router.push('/login')
 }
 </script>
 
@@ -86,7 +86,6 @@ const handleLogin = () => {
       </div>
     </div>
     <MobileTabBar v-if="isMobile && !route.meta?.hideSidebar" />
-    <AuthDialog />
     <RedemptionCodeDialog />
     <NoticeAnnouncer ref="noticeAnnouncerRef" />
   </div>

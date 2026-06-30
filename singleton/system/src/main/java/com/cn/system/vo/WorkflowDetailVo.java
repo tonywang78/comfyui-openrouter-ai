@@ -27,6 +27,10 @@ public class WorkflowDetailVo implements Serializable {
 
     private Long creditsDeducted;
 
+    private Boolean published;
+
+    private String requiredLevel;
+
     private List<ParsingWorkflowVo.AllNode> allNodeList;
 
     private List<ParsingWorkflowVo.FormNode> formNodeList;
