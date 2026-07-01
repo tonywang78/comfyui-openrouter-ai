@@ -13,7 +13,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.web.context.request.WebRequest;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 
 
@@ -48,14 +51,20 @@ public class GlobalInterceptor {
 
     @ResponseBody
     @ExceptionHandler(value = Exception.class)
-    public SaResult exceptionHandler(Exception e) {
+    public SaResult exceptionHandler(Exception e, WebRequest request) {
+        if (request instanceof ServletWebRequest servletWebRequest) {
+            HttpServletResponse response = servletWebRequest.getResponse();
+            if (response != null && response.isCommitted()) {
+                log.error("响应已提交，无法写入异常信息: {}", e.getMessage());
+                return null;
+            }
+            response.setContentType("application/json;charset=UTF-8");
+        }
         if (e instanceof MethodArgumentNotValidException) {
-            final String message = e.getMessage();
             final List<ObjectError> allErrors = ((MethodArgumentNotValidException) e).getBindingResult().getAllErrors();
             return SaResult.error(allErrors.get(0).getDefaultMessage());
         }
-        e.printStackTrace();
-        log.error("服务出现了未被拦截异常信息 信息:{}", e.getMessage());
+        log.error("服务出现了未被拦截异常信息 信息:{}", e.getMessage(), e);
         return SaResult.error(e.getMessage());
     }
 }

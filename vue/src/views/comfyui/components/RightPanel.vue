@@ -3,7 +3,7 @@
     <div class="header">
       <div class="workflow-header-info">
         <div class="workflow-avatar">
-          <img :src="item?.url" :alt="item?.name" class="avatar-img" />
+          <CoverMedia :src="item?.url" :alt="item?.name" media-class="avatar-img" />
         </div>
         <div class="workflow-details">
           <div class="workflow-name">{{ item?.name || t('comfyui.panel.title') }}</div>
@@ -57,6 +57,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElNotification } from 'element-plus'
 import ComfyuiFormRenderer from './ComfyuiFormRenderer.vue'
+import CoverMedia from '@/components/common/CoverMedia.vue'
 import { comfyuiTaskApi } from '@/api/workflow-task/workflow-task'
 import type { SubmitTaskApi } from '@/api/workflow-task/types'
 import { WorkflowFormTypeEnum } from '@/enums'
@@ -213,6 +214,11 @@ const handleFormSubmit = async (submitData: Record<string, any>) => {
   overflow: hidden;
   background: var(--el-fill-color-light);
   border: 1px solid var(--el-border-color-lighter);
+}
+
+.workflow-avatar :deep(.cover-media-root) {
+  width: 100%;
+  height: 100%;
 }
 
 .avatar-img {

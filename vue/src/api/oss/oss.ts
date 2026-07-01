@@ -16,5 +16,17 @@ export const ossApi = {
                 'Content-Type': 'multipart/form-data'
             }
         })
+    },
+
+    /**
+     * 上传工作流封面（图片/GIF/视频，服务端按需转码）
+     */
+    uploadCover: (params: UploadFileApi.Params) => {
+        const formData = new FormData()
+        formData.append('file', params.file)
+
+        return post<string>('/oss/upload/cover', formData, {
+            timeout: 180000
+        })
     }
 } 

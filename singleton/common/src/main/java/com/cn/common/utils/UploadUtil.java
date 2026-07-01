@@ -4,6 +4,7 @@ import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.OSSException;
 import com.aliyun.oss.model.ObjectMetadata;
+import com.aliyun.oss.model.OSSObject;
 import com.cn.common.configuration.AliConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -49,6 +52,26 @@ public class UploadUtil {
             return signObjectKey(ossClient, oss.getBucketName(), objectKey);
         } catch (IOException e) {
             throw new OSSException();
+        } finally {
+            ossClient.shutdown();
+        }
+    }
+
+    /**
+     * 上传本地文件到 OSS，返回签名 URL。
+     */
+    public String uploadLocalFile(Path localFile, String path, String extension, String contentType) {
+        AliConfiguration.Oss oss = aliConfiguration.getOss();
+        OSS ossClient = createOssClient();
+        try (InputStream inputStream = Files.newInputStream(localFile)) {
+            String objectKey = path + "/" + UUID.randomUUID() + "." + extension;
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            objectMetadata.setContentType(contentType);
+            objectMetadata.setContentLength(Files.size(localFile));
+            ossClient.putObject(oss.getBucketName(), objectKey, inputStream, objectMetadata);
+            return signObjectKey(ossClient, oss.getBucketName(), objectKey);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload local file", e);
         } finally {
             ossClient.shutdown();
         }
@@ -182,6 +205,65 @@ public class UploadUtil {
         }
     }
 
+    /**
+     * 打开 OSS 对象流，调用方须在 try-with-resources 中关闭。
+     */
+    public OssObjectStream openObject(String objectKey) {
+        AliConfiguration.Oss oss = aliConfiguration.getOss();
+        OSS ossClient = createOssClient();
+        OSSObject object = ossClient.getObject(oss.getBucketName(), objectKey);
+        ObjectMetadata metadata = object.getObjectMetadata();
+        String contentType = metadata.getContentType();
+        if (!StringUtils.hasText(contentType)) {
+            contentType = getMimeType(objectKey);
+        }
+        return new OssObjectStream(ossClient, object, contentType, metadata.getContentLength());
+    }
+
+    public static final class OssObjectStream implements AutoCloseable {
+        private final OSS ossClient;
+        private final OSSObject object;
+        private final String contentType;
+        private final long contentLength;
+
+        private OssObjectStream(OSS ossClient, OSSObject object, String contentType, long contentLength) {
+            this.ossClient = ossClient;
+            this.object = object;
+            this.contentType = contentType;
+            this.contentLength = contentLength;
+        }
+
+        public InputStream getInputStream() {
+            return object.getObjectContent();
+        }
+
+        public String getContentType() {
+            return contentType;
+        }
+
+        public long getContentLength() {
+            return contentLength;
+        }
+
+        @Override
+        public void close() {
+            try {
+                object.close();
+            } finally {
+                ossClient.shutdown();
+            }
+        }
+    }
+
+    public boolean isAllowedMediaObjectKey(String objectKey) {
+        if (!StringUtils.hasText(objectKey) || objectKey.contains("..")) {
+            return false;
+        }
+        return objectKey.startsWith("TEMP/")
+                || objectKey.startsWith("COMFYUI/")
+                || objectKey.startsWith("USER/");
+    }
+
     private OSS createOssClient() {
         AliConfiguration.Oss oss = aliConfiguration.getOss();
         AliConfiguration.Certified certified = aliConfiguration.getCertified();
@@ -199,22 +281,31 @@ public class UploadUtil {
         return configured != null && configured > 0 ? configured : DEFAULT_SIGNED_URL_EXPIRE_SECONDS;
     }
 
+    public String resolveMimeType(String fileName) {
+        return getMimeType(fileName);
+    }
+
     private String getMimeType(String fileName) {
-        if (fileName.endsWith(".jpg")) {
+        String lower = fileName == null ? "" : fileName.toLowerCase();
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
             return "image/jpeg";
-        } else if (fileName.endsWith(".jpeg")) {
-            return "image/jpeg";
-        } else if (fileName.endsWith(".png")) {
+        } else if (lower.endsWith(".png")) {
             return "image/png";
-        } else if (fileName.endsWith(".webp")) {
+        } else if (lower.endsWith(".webp")) {
             return "image/webp";
-        } else if (fileName.endsWith(".mp4")) {
+        } else if (lower.endsWith(".gif")) {
+            return "image/gif";
+        } else if (lower.endsWith(".mp4")) {
             return "video/mp4";
-        } else if (fileName.endsWith(".avi")) {
+        } else if (lower.endsWith(".avi")) {
             return "video/x-msvideo";
-        } else if (fileName.endsWith(".mp3")) {
+        } else if (lower.endsWith(".mov")) {
+            return "video/quicktime";
+        } else if (lower.endsWith(".webm")) {
+            return "video/webm";
+        } else if (lower.endsWith(".mp3")) {
             return "audio/mpeg";
-        } else if (fileName.endsWith(".wav")) {
+        } else if (lower.endsWith(".wav")) {
             return "audio/x-wav";
         }
         return "application/octet-stream";

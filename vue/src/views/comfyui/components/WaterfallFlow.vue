@@ -1,315 +1,194 @@
 <template>
   <div class="waterfall-container" ref="containerRef">
-    <Waterfall
-      v-if="containerWidth > 0"
-      ref="waterfallRef"
-      :list="processedItems"
-      img-selector="imageUrl"
-      :cross-origin="false"
-      :gutter="10"
-      :breakpoints="{
-        3000: { rowPerView: 10 },
-        2400: { rowPerView: 8 },
-        1920: { rowPerView: 7 },
-        1600: { rowPerView: 6 },
-        1200: { rowPerView: 5 },
-        1000: { rowPerView: 4 },
-        800: { rowPerView: 3 },
-        500: { rowPerView: 2 },
-        0: { rowPerView: 1 }
-      }"
-      :hasAroundGutter="false"
-      backgroundColor="transparent"
-      :animation-effect="'fadeInUp'"
-      :animation-delay="100"
-      :lazyload="true"
-      :delay="300"
-    >
-      <template #default="{ item, url }">
-        <div class="waterfall-item" :key="item.id" @click="handleItemClick(item)">
-          <!-- 无封面时显示占位 -->
-          <div v-if="!url" class="image-error-placeholder">
-            <el-icon size="48" color="#ccc"><Picture /></el-icon>
-            <p>{{ item.title }}</p>
-          </div>
-          <!-- 普通图片预览 -->
-          <div v-else-if="!imageErrors[item.id]" class="image-wrapper">
-            <div v-if="!imageLoaded[item.id]" class="loading-spinner">
-              <el-icon class="is-loading" size="24" color="#888"><Loading /></el-icon>
-            </div>
-            <LazyImg 
-              :url="url" 
-              :alt="item.title"
-              class="waterfall-image"
-              @error="() => handleImageError(item)"
-              @success="() => handleImageLoad(item)"
-            />
-          </div>
-          <!-- 错误状态 -->
-          <div v-else class="image-error-placeholder">
-            <el-icon size="48" color="#ccc"><Picture /></el-icon>
-            <p>图片加载失败</p>
-          </div>
-          
-          <div class="tag" :style="{ opacity: imageLoaded[item.id] ? 1 : 0 }">{{ item.categoryName }}</div>
-          <div class="title-overlay" :style="{ opacity: imageLoaded[item.id] ? 1 : 0 }">
-            <h3>{{ item.title }}</h3>
-          </div>
+    <div v-if="items.length > 0" class="workflow-grid">
+      <div
+        v-for="item in items"
+        :key="item.id"
+        class="workflow-card"
+        @click="handleItemClick(item)"
+      >
+        <div v-if="!item.imageUrl" class="card-placeholder">
+          <el-icon size="40" color="#ccc"><Picture /></el-icon>
+          <p>{{ item.title }}</p>
         </div>
-      </template>
-    </Waterfall>
-    <!-- 加载状态 -->
-    <div v-else-if="containerWidth === 0" class="loading-container">
+        <template v-else-if="!imageErrors[item.id]">
+          <div v-if="!imageLoaded[item.id]" class="loading-spinner">
+            <el-icon class="is-loading" size="24" color="#888"><Loading /></el-icon>
+          </div>
+          <CoverMedia
+            :src="item.imageUrl"
+            fit="cover"
+            media-class="card-media"
+            img-loading="lazy"
+            @load="() => handleImageLoad(item)"
+            @error="() => handleImageError(item)"
+          />
+        </template>
+        <div v-else class="card-placeholder">
+          <el-icon size="40" color="#ccc"><Picture /></el-icon>
+          <p>加载失败</p>
+        </div>
+
+        <div class="tag" :style="{ opacity: imageLoaded[item.id] || imageErrors[item.id] ? 1 : 0 }">
+          {{ item.categoryName }}
+        </div>
+        <div class="title-overlay" :style="{ opacity: imageLoaded[item.id] || imageErrors[item.id] ? 1 : 0 }">
+          <h3>{{ item.title }}</h3>
+        </div>
+      </div>
+    </div>
+    <div v-else class="loading-container">
       <el-skeleton :rows="3" animated />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import { LazyImg, Waterfall } from 'vue-waterfall-plugin-next'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { Picture, Loading } from '@element-plus/icons-vue'
-import 'vue-waterfall-plugin-next/dist/style.css'
+import CoverMedia from '@/components/common/CoverMedia.vue'
 
 interface WaterfallItem {
-  id: number;
-  imageUrl: string;
-  title: string;
-  categoryName: string;
-  imageError?: boolean;
+  id: number
+  imageUrl: string
+  title: string
+  categoryName: string
 }
 
 const { items } = defineProps<{
   items: WaterfallItem[]
-}>();
+}>()
 
-const containerRef = ref<HTMLElement | null>(null);
-const waterfallRef = ref<any>(null);
-const containerWidth = ref(0);
-const imageErrors = ref<Record<number, boolean>>({});
-const imageLoaded = ref<Record<number, boolean>>({});
-let resizeObserver: ResizeObserver | null = null;
-let refreshTimer: ReturnType<typeof setTimeout> | null = null;
-
-
-const processedItems = computed(() => {
-  return items.map(item => ({
-    ...item,
-
-    key: `workflow-${item.id}`
-  }));
-});
-
-// 刷新瀑布流布局（防抖版本）
-const refreshLayout = async () => {
-  if (refreshTimer) {
-    clearTimeout(refreshTimer);
-  }
-  
-  refreshTimer = setTimeout(async () => {
-    if (waterfallRef.value) {
-      // 等待 DOM 更新
-      await nextTick();
-      // 再等待一帧确保图片完全渲染
-      requestAnimationFrame(() => {
-        waterfallRef.value?.renderer();
-      });
-    }
-  }, 100);
-};
-
-
+const containerRef = ref<HTMLElement | null>(null)
+const imageErrors = ref<Record<number, boolean>>({})
+const imageLoaded = ref<Record<number, boolean>>({})
 
 const onScroll = () => {
-  if (!containerRef.value) return;
-  const { scrollTop, scrollHeight, clientHeight } = containerRef.value;
+  if (!containerRef.value) return
+  const { scrollTop, scrollHeight, clientHeight } = containerRef.value
   if (scrollTop + clientHeight >= scrollHeight - 100) {
-    emit('reach-bottom');
+    emit('reach-bottom')
   }
-};
+}
 
-onMounted(async () => {
-  if (containerRef.value) {
-    containerRef.value.addEventListener('scroll', onScroll);
-    resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        containerWidth.value = entry.contentRect.width;
-      }
-    });
-    resizeObserver.observe(containerRef.value);
-  }
-  
-  // 组件挂载后刷新一次布局
-  await nextTick();
-  setTimeout(() => {
-    refreshLayout();
-  }, 500);
-});
+onMounted(() => {
+  containerRef.value?.addEventListener('scroll', onScroll)
+})
 
 onUnmounted(() => {
-  if (containerRef.value && resizeObserver) {
-    resizeObserver.unobserve(containerRef.value);
-  }
-  if (containerRef.value) {
-    containerRef.value.removeEventListener('scroll', onScroll);
-  }
-});
+  containerRef.value?.removeEventListener('scroll', onScroll)
+})
 
-const emit = defineEmits(['item-click', 'reach-bottom']);
+const emit = defineEmits(['item-click', 'reach-bottom'])
 
 const handleItemClick = (item: WaterfallItem) => {
-  emit('item-click', item);
-};
+  emit('item-click', item)
+}
 
 const handleImageError = (item: WaterfallItem) => {
-  console.warn('图片加载失败:', item.imageUrl, 'ID:', item.id);
-
-  imageErrors.value[item.id] = true;
-};
+  imageErrors.value[item.id] = true
+}
 
 const handleImageLoad = (item: WaterfallItem) => {
-  console.log('图片加载成功:', item.imageUrl, 'ID:', item.id);
- 
-  imageLoaded.value = { ...imageLoaded.value, [item.id]: true };
-  imageErrors.value[item.id] = false;
-  
-  // 等待图片渲染完成后刷新布局
-  nextTick(() => {
-    refreshLayout();
-  });
-};
+  imageLoaded.value = { ...imageLoaded.value, [item.id]: true }
+  imageErrors.value[item.id] = false
+}
 
-
-watch(() => items, async (newItems) => {
-  const currentIds = new Set(newItems.map(item => item.id));
-
-  Object.keys(imageErrors.value).forEach(key => {
-    const id = Number(key);
-    if (!currentIds.has(id)) {
-      delete imageErrors.value[id];
-      delete imageLoaded.value[id];
-    }
-  });
-  
-  // 数据变化时刷新布局，给图片加载留出时间
-  await nextTick();
-  setTimeout(() => {
-    refreshLayout();
-  }, 500);
-}, { deep: true });
-
-// 监听容器宽度变化，刷新布局
-watch(containerWidth, async () => {
-  await nextTick();
-  setTimeout(() => {
-    refreshLayout();
-  }, 100);
-});
+watch(
+  () => items,
+  (newItems) => {
+    const currentIds = new Set(newItems.map(item => item.id))
+    Object.keys(imageErrors.value).forEach(key => {
+      const id = Number(key)
+      if (!currentIds.has(id)) {
+        delete imageErrors.value[id]
+        delete imageLoaded.value[id]
+      }
+    })
+  },
+  { deep: true }
+)
 </script>
 
-<style>
+<style scoped>
 .waterfall-container {
   width: 100%;
   height: 100%;
   overflow: auto;
-
 }
 
-.waterfall-item {
-  background-color: transparent;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  cursor: pointer;
+.workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 12px;
+  padding: 2px;
+}
+
+@media (min-width: 640px) {
+  .workflow-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .workflow-grid {
+    grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+    gap: 14px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .workflow-grid {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  }
+}
+
+.workflow-card {
   position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: 10px;
   overflow: hidden;
-
-  min-height: 200px;
+  cursor: pointer;
+  background: var(--el-fill-color-light);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
-.waterfall-item:hover {
-  transform: translateY(-2px);
+.workflow-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
-.image-wrapper {
-  width: 100%;
-  position: relative;
-  /* 防止图片加载时布局跳动 */
-  display: block;
-  min-height: 200px;
-  background-color: var(--el-fill-color-light);
-  border-radius: 8px;
-}
-
-.waterfall-item .tag {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background-color: rgba(0, 0, 0, 0.6);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 15px;
-  font-size: 12px;
-  z-index: 1;
-  transition: opacity 0.3s ease;
-}
-
-.title-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
-  padding: 20px 12px 10px 12px;
-  color: white;
-  transition: opacity 0.3s ease;
-}
-
-.title-overlay h3 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: normal;
-  text-align: left;
-}
-
-
-.lazy__img[lazy=loading] {
-  position: absolute;
-  top: 0;
-  left: 0;
+.workflow-card :deep(.cover-media-root) {
   width: 100%;
   height: 100%;
-  border-radius: 8px;
-  background: linear-gradient(
-    90deg,
-    var(--el-fill-color-light) 25%,
-    var(--el-fill-color) 50%,
-    var(--el-fill-color-light) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite linear;
 }
 
-.lazy__img[lazy=loaded] {
+.workflow-card :deep(.card-media) {
   width: 100%;
-  border-radius: 8px;
-  transition: transform 0.3s ease;
-  animation: zoomIn 0.4s ease-out;
+  height: 100%;
+  object-fit: cover;
 }
 
-.lazy__img[lazy=loaded]:hover {
-  transform: scale(1.02);
-}
-
-.waterfall-image {
+.card-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  border-radius: 8px;
-  transition: transform 0.3s ease;
-  display: block;
-  height: auto;
+  height: 100%;
+  padding: 12px;
+  text-align: center;
 }
 
-.waterfall-image:hover {
-  transform: scale(1.02);
+.card-placeholder p {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--el-text-color-placeholder);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .loading-spinner {
@@ -317,58 +196,49 @@ watch(containerWidth, async () => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 1;
+  z-index: 2;
 }
 
-.lazy__img {
-  width: 100% !important;
-  height: auto !important;
-  display: block !important;
+.tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  z-index: 3;
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity 0.25s ease;
 }
 
-.lazy__img[lazy=error] {
-  padding: 5em 0;
-  width: 48px;
+.title-overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 28px 12px 10px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0) 100%);
+  color: #fff;
+  z-index: 3;
+  transition: opacity 0.25s ease;
 }
 
-.image-error-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  background: var(--el-fill-color-light);
-  border-radius: 8px;
-}
-
-.image-error-placeholder p {
-  margin: 8px 0 0 0;
-  font-size: 14px;
-  color: var(--el-text-color-placeholder);
+.title-overlay h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .loading-container {
   padding: 20px;
   width: 100%;
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-@keyframes zoomIn {
-  from {
-    transform: scale(0.95);
-    opacity: 0.6;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
 }
 </style>

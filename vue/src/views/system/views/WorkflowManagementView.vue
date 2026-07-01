@@ -39,13 +39,12 @@
           <el-table :data="table.items" border stripe style="width: 100%" height="100%" class="workflow-table">
             <el-table-column :label="t('system.workflow.table.cover')" width="84">
               <template #default="{ row }">
-                <img
+                <div
                   v-if="row.url"
-                  :src="row.url"
-                  :alt="t('system.workflow.table.cover')"
-                  style="width: 56px; height: 56px; object-fit: cover; border-radius: 4px; background: var(--el-fill-color);"
-                  @error="(e: Event) => ((e.target as HTMLImageElement).style.display = 'none')"
-                />
+                  class="workflow-cover-thumb"
+                >
+                  <CoverMedia :src="row.url" :alt="t('system.workflow.table.cover')" fit="cover" />
+                </div>
                 <div v-else style="width: 56px; height: 56px; border-radius: 4px; background: var(--el-fill-color);"></div>
               </template>
             </el-table-column>
@@ -109,21 +108,25 @@
                 <div class="cover-field">
                   <div class="cover-row">
                     <el-input v-model="baseForm.url" :placeholder="t('system.workflow.dialog.coverPlaceholder')" />
-                    <el-upload :show-file-list="false" :http-request="handleCoverUpload" accept="image/*">
-                      <el-button class="secondary-btn">{{ t('system.workflow.dialog.upload') }}</el-button>
+                    <el-upload
+                      :show-file-list="false"
+                      :http-request="handleCoverUpload"
+                      accept="image/*,video/*,.gif"
+                      :disabled="coverUploading"
+                    >
+                      <el-button class="secondary-btn" :loading="coverUploading">
+                        {{ coverUploading ? t('system.workflow.dialog.coverUploading') : t('system.workflow.dialog.upload') }}
+                      </el-button>
                     </el-upload>
                   </div>
                   <div v-if="baseForm.url" class="cover-preview">
-                    <el-image
+                    <CoverMedia
+                      :key="baseForm.url"
                       :src="baseForm.url"
                       fit="cover"
-                      :preview-src-list="[baseForm.url]"
                       :alt="t('system.workflow.dialog.cover')"
-                    >
-                      <template #error>
-                        <div class="cover-preview-error">{{ t('system.workflow.dialog.coverPreviewFailed') }}</div>
-                      </template>
-                    </el-image>
+                      :error-text="t('system.workflow.dialog.coverPreviewFailed')"
+                    />
                   </div>
                 </div>
               </el-form-item>
@@ -308,6 +311,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { workflowApi } from '@/api/system-workflow/system-workflow'
 import type { ParsingWorkflowVo, FormNodeConfig, OutputNodeConfig, WorkflowListItem, WorkflowDetailVo } from '@/api/system-workflow/types'
 import { ossApi } from '@/api/oss/oss'
+import CoverMedia from '@/components/common/CoverMedia.vue'
 import { WorkflowFormTypeEnum, WorkflowResultModelTypeEnum, WorkflowResultModelDigitalEnum } from '@/enums/workflow'
 import { PromptStyleEnum, PROMPT_STYLE_OPTIONS } from '@/enums/promptStyle'
 import { Role } from '@/enums/user'
@@ -321,6 +325,7 @@ const editingWorkflowId = ref<number | null>(null)
 const loadingDetailId = ref<number | null>(null)
 const parsing = ref(false)
 const saving = ref(false)
+const coverUploading = ref(false)
 
 const jsonFileRef = ref<HTMLInputElement | null>(null)
 const createFormRef = ref<FormInstance>()
@@ -830,11 +835,14 @@ const handleSave = async () => {
 
 const handleCoverUpload = async (req: any) => {
   try {
-    const url = await ossApi.uploadFile({ file: req.file })
+    coverUploading.value = true
+    const url = await ossApi.uploadCover({ file: req.file })
     baseForm.url = url
     ElNotification.success(t('system.workflow.dialog.coverUploadSuccess'))
   } catch (e) {
     console.error(e)
+  } finally {
+    coverUploading.value = false
   }
 }
 
@@ -1093,23 +1101,25 @@ const resetAll = () => {
   overflow: hidden;
   border: 1px solid var(--el-border-color);
   background: var(--el-fill-color);
+  flex-shrink: 0;
 }
 
-.base-form .cover-preview :deep(.el-image) {
+.base-form .cover-preview :deep(.cover-media-root) {
   width: 100%;
   height: 100%;
 }
 
-.base-form .cover-preview-error {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.workflow-cover-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 4px;
+  background: var(--el-fill-color);
+  overflow: hidden;
+}
+
+.workflow-cover-thumb :deep(.cover-media-root) {
   width: 100%;
   height: 100%;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-  text-align: center;
-  padding: 8px;
 }
 
 .parse-row {

@@ -43,6 +43,12 @@ ali:
     bucket-name: "${ALI_OSS_BUCKET}"
     domain: "${ALI_OSS_DOMAIN}"
     signed-url-expire-seconds: ${ALI_OSS_SIGNED_URL_EXPIRE_SECONDS:3600}
+    cover:
+      max-duration-seconds: 5
+      max-long-edge: 480
+      transcode-threshold-bytes: 3145728
+      max-upload-bytes: 104857600
+      transcode-timeout-seconds: 120
     # 支持的文件类型 全局
     supported-file-types:
       - extension: "jpg"
