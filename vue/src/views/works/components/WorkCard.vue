@@ -11,6 +11,19 @@
         size="small"
       />
     </div>
+
+    <!-- 删除按钮 -->
+    <button
+      v-if="!selectionMode"
+      class="delete-btn"
+      type="button"
+      :disabled="deleting"
+      :title="t('workDetail.delete')"
+      @click.stop="handleDelete"
+    >
+      <el-icon v-if="deleting" class="is-loading"><Loading /></el-icon>
+      <el-icon v-else><Delete /></el-icon>
+    </button>
     
     <div class="work-image">
       <!-- 3D模型预览 -->
@@ -83,7 +96,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Picture } from '@element-plus/icons-vue'
+import { Picture, Delete, Loading } from '@element-plus/icons-vue'
 import Model3DPreview from './Model3DPreview.vue'
 import { WorkflowResultModelTypeEnum } from '@/enums/workflow'
 import { useI18n } from 'vue-i18n'
@@ -109,11 +122,15 @@ const props = defineProps({
   isSelected: {
     type: Boolean,
     default: false
+  },
+  deleting: {
+    type: Boolean,
+    default: false
   }
 })
 
 // Emits
-const emit = defineEmits(['click', 'imageError', 'select'])
+const emit = defineEmits(['click', 'imageError', 'select', 'delete'])
 
 // 处理卡片点击
 const handleCardClick = () => {
@@ -127,6 +144,11 @@ const handleCardClick = () => {
 // 处理选择
 const handleSelect = () => {
   emit('select', props.work)
+}
+
+// 处理删除
+const handleDelete = () => {
+  emit('delete', props.work)
 }
 
 // 获取作品类型显示名称
@@ -230,6 +252,39 @@ const handleVideoHoverPause = () => {
 /* 暗色主题下选中状态更明显 */
 html.dark .work-card.selected {
   box-shadow: 0 4px 20px rgba(64, 158, 255, 0.5);
+}
+
+.delete-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.work-card:hover .delete-btn {
+  opacity: 1;
+}
+
+.delete-btn:hover:not(:disabled) {
+  background: var(--el-color-danger);
+}
+
+.delete-btn:disabled {
+  cursor: not-allowed;
+  opacity: 1;
 }
 
 .selection-checkbox {

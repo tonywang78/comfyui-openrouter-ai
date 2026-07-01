@@ -58,9 +58,11 @@
           :work="work"
           :selection-mode="selectionMode"
           :is-selected="isWorkSelected(work.workflowResultId)"
+          :deleting="deletingId === work.workflowResultId"
           @click="handleWorkClick"
           @select="handleWorkSelect"
           @imageError="handleImageError"
+          @delete="handleSingleDeleteConfirm"
         />
       </div>
       
@@ -141,6 +143,7 @@ const pagination = reactive({
 const selectionMode = ref(false)
 const selectedWorks = ref([])
 const batchDeleting = ref(false)
+const deletingId = ref(null)
 
 // 计算属性
 const isAllSelected = computed(() => {
@@ -248,6 +251,48 @@ const handleWorkDeleted = (deletedId) => {
   
   // 更新总数
   pagination.total = Math.max(0, pagination.total - 1)
+}
+
+// 单条删除确认
+const handleSingleDeleteConfirm = async (work) => {
+  try {
+    await ElMessageBox.confirm(
+      t('workDetail.deleteConfirm'),
+      t('workDetail.deleteTitle'),
+      {
+        confirmButtonText: t('workDetail.deleteButton'),
+        cancelButtonText: t('works.cancel'),
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger'
+      }
+    )
+
+    await handleSingleDelete(work.workflowResultId)
+  } catch {
+    // 用户取消删除
+  }
+}
+
+// 单条删除作品
+const handleSingleDelete = async (workflowResultId) => {
+  deletingId.value = workflowResultId
+
+  try {
+    await WorkflowResultModelApi.reqDeleteWorkflowResult({ workflowResultId })
+
+    ElNotification.success({
+      message: t('workDetail.deleteSuccess')
+    })
+
+    handleWorkDeleted(workflowResultId)
+  } catch (error) {
+    console.error('删除作品失败:', error)
+    ElNotification.error({
+      message: t('workDetail.deleteFailed')
+    })
+  } finally {
+    deletingId.value = null
+  }
 }
 
 // 跳转到创建页面
