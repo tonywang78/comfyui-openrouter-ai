@@ -20,17 +20,24 @@
         :alt="`${t('works.model3D.alt')} ${work.workflowResultId}`"
         @error="handleImageError"
       />
-      <!-- 视频预览 -->
-      <div v-else-if="work.type === WorkflowResultModelTypeEnum.VIDEO" class="video-preview">
-        <video 
-          :src="work.url" 
+      <!-- 视频预览：悬停自动播放 -->
+      <div
+        v-else-if="work.type === WorkflowResultModelTypeEnum.VIDEO"
+        class="video-preview"
+        @mouseenter="handleVideoHoverPlay"
+        @mouseleave="handleVideoHoverPause"
+      >
+        <video
+          ref="videoRef"
+          :src="work.url"
           @error="handleImageError"
           preload="metadata"
           muted
+          loop
+          playsinline
           disablePictureInPicture
           controlslist="nodownload nofullscreen noremoteplayback"
           class="video-element"
- 
         >
           {{ t('works.workCard.videoNotSupported') }}
         </video>
@@ -75,6 +82,7 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { Picture } from '@element-plus/icons-vue'
 import Model3DPreview from './Model3DPreview.vue'
 import { WorkflowResultModelTypeEnum } from '@/enums/workflow'
@@ -170,6 +178,25 @@ const formatTime = (timeStr) => {
 // 图片加载错误处理
 const handleImageError = () => {
   emit('imageError', props.work)
+}
+
+const videoRef = ref(null)
+
+const handleVideoHoverPlay = async () => {
+  const video = videoRef.value
+  if (!video) return
+  try {
+    await video.play()
+  } catch {
+    // 浏览器可能拒绝播放，忽略即可
+  }
+}
+
+const handleVideoHoverPause = () => {
+  const video = videoRef.value
+  if (!video) return
+  video.pause()
+  video.currentTime = 0
 }
 </script>
 
