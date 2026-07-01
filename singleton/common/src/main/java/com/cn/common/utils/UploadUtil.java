@@ -246,7 +246,7 @@ public class UploadUtil {
         }
 
         @Override
-        public void close() {
+        public void close() throws IOException {
             try {
                 object.close();
             } finally {
