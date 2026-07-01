@@ -1038,6 +1038,54 @@ export default {
       }
     }
   },
+
+  mediaLibrary: {
+    title: '媒体库',
+    subtitle: '管理个人照、短视频等常用素材，标准化后可复用于生成任务',
+    noMore: '已显示全部素材',
+    banner: {
+      title: '我的个人媒体库',
+      description: '集中管理个人照与短视频，一键标准化大头照，生成任务直接复用',
+      stats: {
+        personalAssets: '个人素材',
+        headshot: '大头照标准化',
+        reuse: '任务复用'
+      }
+    },
+    uploadTitle: '上传素材',
+    uploadHint: '支持图片、短视频、音频，拖拽或点击上传',
+    uploadSuccess: '上传成功',
+    uploadFailed: '上传失败',
+    filterAll: '全部',
+    filterImage: '图片',
+    filterVideo: '视频',
+    searchPlaceholder: '搜索素材名称',
+    empty: {
+      title: '还没有素材',
+      description: '上传个人照或短视频，开始构建你的媒体库'
+    },
+    deleteConfirm: '确定删除「{name}」？',
+    deleteSuccess: '已删除',
+    detailTitle: '素材详情',
+    standardization: '标准化',
+    builtinHeadshot: '快速大头照',
+    comfyuiHeadshot: '精修大头照',
+    createTask: '用于生成',
+    createTaskTitle: '从素材创建任务',
+    selectWorkflow: '选择工作流',
+    submitTask: '提交任务',
+    taskSubmitted: '任务已提交',
+    builtinDone: '大头照已生成',
+    comfyuiStarted: '精修任务已提交',
+    statusPending: '等待中',
+    statusProcessing: '处理中',
+    statusSucceeded: '已完成',
+    statusFailed: '失败',
+    pickerTitle: '从媒体库选择',
+    saveToLibrary: '存为素材',
+    saveToLibrarySuccess: '已保存到媒体库',
+    saveToLibraryFailed: '保存失败'
+  },
   
   // 工具函数
   utils: {
@@ -1153,6 +1201,7 @@ export default {
         onlineGeneration: '在线生成',
         onlineGenerationDesc: 'ComfyUI 工作流',
         myWorks: '我的作品',
+        mediaLibrary: '媒体库',
         profile: '个人中心',
         aiChat: 'AI聊天',
         aiChatBadge: '免费',

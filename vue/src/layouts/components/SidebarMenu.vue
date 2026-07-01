@@ -12,6 +12,7 @@ const { t } = useI18n()
 // 导入所有SVG图标
 import CreativeIcon from '@/assets/svg/creative.svg'
 import AssetsIcon from '@/assets/svg/assets.svg'
+import MediaLibraryIcon from '@/assets/svg/media-library.svg'
 import ProfileIcon from '@/assets/svg/profile.svg'
 import ChatIcon from '@/assets/svg/chatIcon.svg'
 import ExchangeCodeIcon from '@/assets/svg/exchange-code.svg'
@@ -50,6 +51,12 @@ const menuSections = computed<MenuSection[]>(() => [
         title: t('layouts.sidebar.menu.onlineGeneration'), 
         route: '/comfyui', 
         icon: CreativeIcon
+      },
+      { 
+        id: 'media-library', 
+        title: t('layouts.sidebar.menu.mediaLibrary'), 
+        route: '/media-library', 
+        icon: MediaLibraryIcon 
       },
       { 
         id: 'works', 

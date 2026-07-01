@@ -25,11 +25,13 @@ import com.cn.common.utils.RedisUtils;
 import com.cn.common.utils.StringUtils;
 import com.cn.common.utils.UploadUtil;
 import com.cn.common.utils.CreditUtils;
+import com.cn.common.service.MediaVariantTaskHandler;
 import jakarta.annotation.PreDestroy;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.redisson.api.RKeys;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -103,6 +105,8 @@ public class TaskProcessingListener {
     private final TaskProgressPushService taskProgressPushService;
 
     private final CreditUtils creditUtils;
+
+    private final ObjectProvider<MediaVariantTaskHandler> mediaVariantTaskHandlerProvider;
 
     private final AtomicInteger anomalyCounters = new AtomicInteger(0);
 
@@ -875,6 +879,11 @@ public class TaskProcessingListener {
 
         worksMapper.insert(works);
 
+        MediaVariantTaskHandler mediaHandler = mediaVariantTaskHandlerProvider.getIfAvailable();
+        if (mediaHandler != null && o.getMediaVariantId() != null) {
+            mediaHandler.onComfyuiTaskSucceeded(taskId, userId, objectKey, works.getId());
+        }
+
         // 任务成功完成，消费冻结的积分
         if (o.getCreditsDeducted() != null && o.getCreditsDeducted() > 0) {
             boolean consumed = creditUtils.consumeCredits(
@@ -974,6 +983,11 @@ public class TaskProcessingListener {
         
         TaskInfoStructure failedTask = o.setStatus(TaskStatusEnum.FAILED.getDec());
         redisUtils.hashPut(key, taskId, failedTask);
+
+        MediaVariantTaskHandler mediaHandler = mediaVariantTaskHandlerProvider.getIfAvailable();
+        if (mediaHandler != null && o.getMediaVariantId() != null) {
+            mediaHandler.onComfyuiTaskFailed(taskId, userId);
+        }
 
         // 统计：今日失败任务数 +1
         recordTaskFailure();

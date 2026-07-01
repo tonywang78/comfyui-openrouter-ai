@@ -48,6 +48,7 @@ public class RoutePathFilter {
                     }
 
                     SaRouter.match("/system/**", r -> StpUtil.checkRole(RoleEnum.ADMIN.getDesc()));
+                    SaRouter.match("/media/admin/**", r -> StpUtil.checkRole(RoleEnum.ADMIN.getDesc()));
 
                     SaRouter.match("/**")
                             .notMatch(

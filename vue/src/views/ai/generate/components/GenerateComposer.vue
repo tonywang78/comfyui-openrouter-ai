@@ -45,6 +45,18 @@
           </svg>
         </button>
 
+        <button
+          type="button"
+          class="tool-btn library"
+          :disabled="disabled || uploading"
+          @click="showMediaPicker = true"
+          :title="t('mediaLibrary.pickerTitle')"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+          </svg>
+        </button>
+
         <label class="web-toggle" :class="{ active: webSearchLocal }">
           <input type="checkbox" v-model="webSearchLocal" :disabled="disabled" />
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -71,6 +83,7 @@
 
       <input ref="fileRef" type="file" accept="image/*,video/*,audio/*,.pdf" multiple hidden @change="onFiles" />
     </div>
+    <MediaPickerDialog v-model:visible="showMediaPicker" @select="onLibrarySelect" />
     <p class="composer-hint">{{ t('generate.composer.hint') }}</p>
   </div>
 </template>
@@ -80,6 +93,8 @@ import { ref, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElNotification } from 'element-plus'
 import { ossApi } from '@/api/oss/oss'
+import MediaPickerDialog from '@/components/common/MediaPickerDialog.vue'
+import type { MediaApi } from '@/api/media/types'
 
 const props = defineProps<{
   disabled?: boolean
@@ -103,6 +118,7 @@ const attachedMeta = ref<{ url: string; filename?: string; mime?: string; kind?:
 const fileRef = ref<HTMLInputElement | null>(null)
 const inputRef = ref<HTMLTextAreaElement | null>(null)
 const uploading = ref(false)
+const showMediaPicker = ref(false)
 const webSearchLocal = ref(props.webSearchEnabled ?? false)
 
 watch(webSearchLocal, (v) => emit('websearch-change', v))
@@ -156,6 +172,19 @@ const onFiles = async (e: Event) => {
 
 const removeAttachment = (idx: number) => {
   attachedMeta.value.splice(idx, 1)
+}
+
+const onLibrarySelect = (item: MediaApi.MediaPickerItemVo) => {
+  if (attachedMeta.value.length >= 8) {
+    ElNotification.warning({ message: t('generate.composer.maxAttachments') })
+    return
+  }
+  const kind = item.mediaType === 'VIDEO' ? 'video' : item.mediaType === 'AUDIO' ? 'audio' : 'image'
+  attachedMeta.value.push({
+    url: item.url,
+    filename: item.name,
+    kind
+  })
 }
 
 const send = () => {

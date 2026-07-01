@@ -1038,6 +1038,54 @@ export default {
       }
     }
   },
+
+  mediaLibrary: {
+    title: 'Media Library',
+    subtitle: 'Manage personal photos and short videos; reuse standardized assets in generation tasks',
+    noMore: 'All media loaded',
+    banner: {
+      title: 'My Personal Media Library',
+      description: 'Organize photos and clips, standardize headshots, and reuse them in generation tasks',
+      stats: {
+        personalAssets: 'Personal assets',
+        headshot: 'Headshot presets',
+        reuse: 'Task reuse'
+      }
+    },
+    uploadTitle: 'Upload media',
+    uploadHint: 'Images, short videos, audio — drag & drop or click',
+    uploadSuccess: 'Uploaded',
+    uploadFailed: 'Upload failed',
+    filterAll: 'All',
+    filterImage: 'Images',
+    filterVideo: 'Videos',
+    searchPlaceholder: 'Search by name',
+    empty: {
+      title: 'No media yet',
+      description: 'Upload a photo or short video to start your library'
+    },
+    deleteConfirm: 'Delete "{name}"?',
+    deleteSuccess: 'Deleted',
+    detailTitle: 'Media detail',
+    standardization: 'Standardization',
+    builtinHeadshot: 'Quick headshot',
+    comfyuiHeadshot: 'Refined headshot',
+    createTask: 'Use in generation',
+    createTaskTitle: 'Create task from media',
+    selectWorkflow: 'Select workflow',
+    submitTask: 'Submit task',
+    taskSubmitted: 'Task submitted',
+    builtinDone: 'Headshot ready',
+    comfyuiStarted: 'Refinement task submitted',
+    statusPending: 'Pending',
+    statusProcessing: 'Processing',
+    statusSucceeded: 'Done',
+    statusFailed: 'Failed',
+    pickerTitle: 'Pick from library',
+    saveToLibrary: 'Save to library',
+    saveToLibrarySuccess: 'Saved to media library',
+    saveToLibraryFailed: 'Save failed'
+  },
   
   // Utility functions
   utils: {
@@ -1153,6 +1201,7 @@ export default {
         onlineGeneration: 'Create',
         onlineGenerationDesc: 'ComfyUI Workflow',
         myWorks: 'My Works',
+        mediaLibrary: 'Media Library',
         profile: 'Profile',
         aiChat: 'AI Chat',
         aiChatBadge: 'Free',

@@ -5,6 +5,7 @@ import { setupRouterGuards } from './guards'
 import MainLayout from '@/layouts/MainLayout.vue'
 import ComfyUIPage from '@/views/comfyui/index.vue' // 确保ComfyUI页面路径正确
 import WorksPage from '@/views/works/index.vue' // 添加作品页面
+import MediaLibraryPage from '@/views/media-library/index.vue'
 import ProfilePage from '@/views/profile/index.vue' // 添加个人中心页面
 // AI功能页面
 import AIChatPage from '@/views/ai/chat/index.vue'
@@ -29,6 +30,19 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'comfyui',
         component: ComfyUIPage
+      },
+      {
+        path: 'media-library',
+        component: MediaLibraryPage,
+        meta: {
+          requiresAuth: true,
+          backButton: {
+            show: true,
+            to: '/comfyui',
+            text: '返回主页'
+          },
+          title: '媒体库'
+        }
       },
       {
         path: 'works',

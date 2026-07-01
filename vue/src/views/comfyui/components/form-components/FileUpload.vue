@@ -14,27 +14,37 @@
           </el-tooltip>
         </div>
       </template>
-      <div class="upload-container">
+      <div class="upload-container" :class="{ 'has-library-picker': showLibraryPicker && !modelValue }">
         <!-- 如果没有文件，显示上传区域 -->
-        <div v-if="!modelValue" class="upload-wrapper" @click="handleUploadClick">
-          <el-upload
-            ref="uploadRef"
-            :http-request="customUpload"
-            :accept="acceptTypes"
-            :limit="1"
-            :before-upload="beforeUpload"
-            :show-file-list="false"
-            :disabled="uploading || !canUpload"
-            class="file-uploader"
+        <div v-if="!modelValue" class="upload-wrapper">
+          <div class="upload-wrapper-inner" @click="handleUploadClick">
+            <el-upload
+              ref="uploadRef"
+              :http-request="customUpload"
+              :accept="acceptTypes"
+              :limit="1"
+              :before-upload="beforeUpload"
+              :show-file-list="false"
+              :disabled="uploading || !canUpload"
+              class="file-uploader"
+            >
+              <div class="upload-trigger">
+                <el-icon class="upload-icon">
+                  <component :is="getUploadIcon()" />
+                </el-icon>
+                <div class="upload-text">{{ getUploadText() }}</div>
+                <div class="upload-hint">{{ getUploadHints() }}</div>
+              </div>
+            </el-upload>
+          </div>
+          <el-button
+            v-if="showLibraryPicker"
+            class="library-pick-btn"
+            size="small"
+            @click.stop="showPicker = true"
           >
-            <div class="upload-trigger">
-              <el-icon class="upload-icon">
-                <component :is="getUploadIcon()" />
-              </el-icon>
-              <div class="upload-text">{{ getUploadText() }}</div>
-              <div class="upload-hint">{{ getUploadHints() }}</div>
-            </div>
-          </el-upload>
+            {{ t('mediaLibrary.pickerTitle') }}
+          </el-button>
         </div>
         
         <!-- 上传进度遮罩层 -->
@@ -72,18 +82,29 @@
         </div>
       </div>
     </el-form-item>
+
+    <MediaPickerDialog
+      v-model:visible="showPicker"
+      :media-type="pickerMediaType"
+      @select="onLibrarySelect"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { ElFormItem, ElUpload, ElIcon, ElNotification, ElTooltip } from 'element-plus'
+import { useI18n } from 'vue-i18n'
+import { ElFormItem, ElUpload, ElIcon, ElNotification, ElTooltip, ElButton } from 'element-plus'
 import { Picture, VideoCamera, Microphone, QuestionFilled } from '@element-plus/icons-vue'
 import type {  UploadFiles, UploadRequestOptions } from 'element-plus'
 import { ossApi } from '@/api/oss/oss'
 import { WorkflowFormTypeEnum } from '@/enums'
 import { useAuthStore } from '@/stores'
 import { redirectToLogin } from '@/utils/authRedirect'
+import MediaPickerDialog from '@/components/common/MediaPickerDialog.vue'
+import type { MediaApi } from '@/api/media/types'
+
+const { t } = useI18n()
 
 interface Props {
   formItem: {
@@ -116,6 +137,29 @@ const uploadProgress = ref(0)
 
 // 控制是否可以上传（用于权限控制）
 const canUpload = ref(true)
+
+const showPicker = ref(false)
+
+const showLibraryPicker = computed(() => {
+  return [
+    WorkflowFormTypeEnum.IMAGE_UPLOAD,
+    WorkflowFormTypeEnum.VIDEO_UPLOAD,
+    WorkflowFormTypeEnum.IMAGE_SCRIBBLE
+  ].includes(props.formItem.type as WorkflowFormTypeEnum)
+})
+
+const pickerMediaType = computed(() => {
+  if (props.formItem.type === WorkflowFormTypeEnum.VIDEO_UPLOAD) return 'VIDEO'
+  return 'IMAGE'
+})
+
+function onLibrarySelect(item: MediaApi.MediaPickerItemVo) {
+  emit('update:model-value', item.url)
+  ElNotification.success({
+    title: t('common.success'),
+    message: item.name
+  })
+}
 
 const fieldKey = computed(() => {
   return `${props.formItem.nodeKey}_${props.formItem.inputs}`
@@ -332,18 +376,47 @@ watch(
 <style scoped>
 .file-upload {
   width: 100%;
+  margin-bottom: 4px;
+}
+
+.el-form-item {
+  margin-bottom: 0;
+}
+
+.el-form-item :deep(.el-form-item__content) {
+  line-height: normal;
 }
 
 .upload-container {
   width: 148px;
-  height: 148px;
+  min-height: 148px;
+  height: auto;
   position: relative;
 }
 
+.upload-container.has-library-picker {
+  width: 100%;
+  max-width: 280px;
+  min-height: 0;
+}
+
 .upload-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.upload-wrapper-inner {
   width: 148px;
   height: 148px;
+  flex-shrink: 0;
   cursor: pointer;
+}
+
+.library-pick-btn {
+  width: 148px;
+  flex-shrink: 0;
 }
 
 .upload-wrapper * {
@@ -508,10 +581,6 @@ watch(
 }
 
 
-
-.el-form-item {
-  margin-bottom: 0;
-}
 
 .el-form-item :deep(.el-form-item__label) {
   font-weight: 500;

@@ -27,6 +27,7 @@
         <module>llm</module>
         <module>system</module>
         <module>notice</module>
+        <module>media</module>
 
     </modules>
 

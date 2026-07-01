@@ -264,6 +264,87 @@ public class UploadUtil {
                 || objectKey.startsWith("USER/");
     }
 
+    /**
+     * 上传字节到指定 objectKey，返回 objectKey。
+     */
+    public String uploadBytes(byte[] data, String objectKey, String contentType) {
+        AliConfiguration.Oss oss = aliConfiguration.getOss();
+        OSS ossClient = createOssClient();
+        try {
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            objectMetadata.setContentType(contentType);
+            objectMetadata.setContentLength(data.length);
+            ossClient.putObject(oss.getBucketName(), objectKey, new ByteArrayInputStream(data), objectMetadata);
+            return objectKey;
+        } finally {
+            ossClient.shutdown();
+        }
+    }
+
+    /**
+     * 上传 MultipartFile 到指定 objectKey，返回 objectKey。
+     */
+    public String uploadFileToKey(final MultipartFile file, final String objectKey) {
+        AliConfiguration.Oss oss = aliConfiguration.getOss();
+        OSS ossClient = createOssClient();
+        try (InputStream inputStream = file.getInputStream()) {
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            objectMetadata.setContentType(file.getContentType());
+            objectMetadata.setContentLength(file.getSize());
+            ossClient.putObject(oss.getBucketName(), objectKey, inputStream, objectMetadata);
+            return objectKey;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload file to key: " + objectKey, e);
+        } finally {
+            ossClient.shutdown();
+        }
+    }
+
+    /**
+     * 同 bucket 内复制对象，返回目标 objectKey。
+     */
+    public String copyObject(String sourceKey, String destKey) {
+        AliConfiguration.Oss oss = aliConfiguration.getOss();
+        OSS ossClient = createOssClient();
+        try {
+            ossClient.copyObject(oss.getBucketName(), sourceKey, oss.getBucketName(), destKey);
+            return destKey;
+        } finally {
+            ossClient.shutdown();
+        }
+    }
+
+    /**
+     * 删除 OSS 对象（忽略不存在）。
+     */
+    public void deleteObject(String objectKey) {
+        if (!StringUtils.hasText(objectKey)) {
+            return;
+        }
+        AliConfiguration.Oss oss = aliConfiguration.getOss();
+        OSS ossClient = createOssClient();
+        try {
+            ossClient.deleteObject(oss.getBucketName(), objectKey);
+        } catch (Exception e) {
+            log.warn("删除 OSS 对象失败: {}", objectKey, e);
+        } finally {
+            ossClient.shutdown();
+        }
+    }
+
+    public boolean objectExists(String objectKey) {
+        if (!StringUtils.hasText(objectKey)) {
+            return false;
+        }
+        AliConfiguration.Oss oss = aliConfiguration.getOss();
+        OSS ossClient = createOssClient();
+        try {
+            return ossClient.doesObjectExist(oss.getBucketName(), objectKey);
+        } finally {
+            ossClient.shutdown();
+        }
+    }
+
     private OSS createOssClient() {
         AliConfiguration.Oss oss = aliConfiguration.getOss();
         AliConfiguration.Certified certified = aliConfiguration.getCertified();

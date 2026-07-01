@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import CreativeIcon from '@/assets/svg/creative.svg'
 import AssetsIcon from '@/assets/svg/assets.svg'
+import MediaLibraryIcon from '@/assets/svg/media-library.svg'
 import ProfileIcon from '@/assets/svg/profile.svg'
 
 const { t } = useI18n()
@@ -12,6 +13,7 @@ const router = useRouter()
 
 const tabs = computed(() => [
   { id: 'comfyui', title: t('layouts.sidebar.menu.onlineGeneration'), route: '/comfyui', icon: CreativeIcon },
+  { id: 'media-library', title: t('layouts.sidebar.menu.mediaLibrary'), route: '/media-library', icon: MediaLibraryIcon },
   { id: 'works', title: t('layouts.sidebar.menu.myWorks'), route: '/works', icon: AssetsIcon },
   { id: 'profile', title: t('layouts.sidebar.menu.profile'), route: '/profile', icon: ProfileIcon }
 ])

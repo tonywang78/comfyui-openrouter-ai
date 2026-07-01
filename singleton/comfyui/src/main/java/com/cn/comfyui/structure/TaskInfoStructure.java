@@ -41,6 +41,11 @@ public class TaskInfoStructure implements Serializable {
      */
     private Long creditsDeducted;
 
+    /**
+     * 媒体库标准化 variant ID（ComfyUI 精修回调用）
+     */
+    private Long mediaVariantId;
+
     @Data
     @Accessors(chain = true)
     public static class Form{

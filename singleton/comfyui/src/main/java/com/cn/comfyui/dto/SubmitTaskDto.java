@@ -25,5 +25,9 @@ public class SubmitTaskDto {
     @NotEmpty(message = "操作节点不能为空")
     private List<TaskNodeContainer> nodeContainer;
 
+    /**
+     * 媒体库标准化任务关联的 variant ID（可选）
+     */
+    private Long mediaVariantId;
 
 }

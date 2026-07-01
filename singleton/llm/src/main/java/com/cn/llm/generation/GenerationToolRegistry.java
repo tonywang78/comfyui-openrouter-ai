@@ -9,6 +9,7 @@ import com.cn.comfyui.service.WorkflowService;
 import com.cn.comfyui.vo.WorkflowInterfaceVo;
 import com.cn.common.configuration.AliConfiguration;
 import com.cn.common.enums.ComfyuiFormTypeEnum;
+import com.cn.common.utils.UploadUtil;
 import com.cn.common.vo.PageVo;
 import com.cn.comfyui.vo.WorkflowsVo;
 import com.cn.llm.config.GenerationAgentConfig;
@@ -42,6 +43,7 @@ public class GenerationToolRegistry {
     private final OpenRouterConfig openRouterConfig;
     private final RemoteRegistryStore remoteRegistryStore;
     private final GenerationWebSearchHelper webSearchHelper;
+    private final UploadUtil uploadUtil;
 
     public List<Map<String, Object>> getToolDefinitions() {
         List<Map<String, Object>> tools = new ArrayList<>();
@@ -394,6 +396,12 @@ public class GenerationToolRegistry {
     private void validateUploadUrl(String url, String sessionId) {
         if (StringUtils.isBlank(url)) {
             throw new LlmException("上传字段 URL 不能为空");
+        }
+        if (uploadUtil.isOwnOssResource(url)) {
+            String objectKey = uploadUtil.extractObjectKey(url);
+            if (objectKey.startsWith("USER/")) {
+                return;
+            }
         }
         String domain = aliConfiguration.getOss() != null ? aliConfiguration.getOss().getDomain() : null;
         if (domain != null && !domain.isBlank()) {

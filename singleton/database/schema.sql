@@ -185,3 +185,77 @@ create table workflow_result
     key           idx_workflow_id (workflow_id)
 )
     comment '工作流作品表';
+
+create table user_media
+(
+    id            bigint auto_increment
+        primary key,
+    user_id       bigint                             not null comment '所属用户',
+    name          varchar(128)                       not null comment '用户命名',
+    media_type    enum ('IMAGE', 'VIDEO', 'AUDIO')   not null comment '媒体类型',
+    object_key    varchar(512)                       not null comment 'OSS objectKey',
+    mime_type     varchar(64)                        not null,
+    file_size     bigint   default 0                 not null,
+    width         int                                null,
+    height        int                                null,
+    duration_ms   int                                null,
+    source        enum ('UPLOAD', 'FROM_WORK', 'FROM_TASK_INPUT') default 'UPLOAD' not null,
+    source_ref_id bigint                             null comment '来源引用ID',
+    tags          json                               null comment '标签数组',
+    status        tinyint  default 1                 not null comment '1=正常 0=已删除',
+    content_hash  char(64)                           null comment 'SHA-256',
+    create_time   datetime default CURRENT_TIMESTAMP not null,
+    update_time   datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP
+)
+    comment '用户媒体库原始素材';
+
+create index idx_user_media_user_id
+    on user_media (user_id);
+
+create index idx_user_media_user_type
+    on user_media (user_id, media_type);
+
+create index idx_user_media_hash
+    on user_media (user_id, content_hash);
+
+create table user_media_variant
+(
+    id                 bigint auto_increment
+        primary key,
+    media_id           bigint                             not null comment '原始素材ID',
+    user_id            bigint                             not null,
+    variant_type       varchar(32)                        not null comment '衍生类型',
+    object_key         varchar(512)                       null comment '衍生文件 OSS key',
+    status             enum ('PENDING', 'PROCESSING', 'SUCCEEDED', 'FAILED') default 'PENDING' not null,
+    processor          enum ('BUILTIN', 'COMFYUI')        not null,
+    workflow_id        bigint                             null,
+    task_id            varchar(255)                       null,
+    workflow_result_id bigint                             null,
+    meta               json                               null,
+    create_time        datetime default CURRENT_TIMESTAMP not null,
+    update_time        datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
+    constraint uk_media_variant
+        unique (media_id, variant_type, processor)
+)
+    comment '用户媒体标准化衍生';
+
+create index idx_variant_user_id
+    on user_media_variant (user_id);
+
+create index idx_variant_task_id
+    on user_media_variant (task_id);
+
+create table media_standardization_config
+(
+    id           bigint auto_increment
+        primary key,
+    variant_type varchar(32)                        not null comment '衍生类型',
+    workflow_id  bigint                             not null comment '绑定工作流',
+    display_name varchar(64)                        not null,
+    enabled      tinyint(1) default 1               not null,
+    create_time  datetime default CURRENT_TIMESTAMP not null,
+    update_time  datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
+    constraint uk_variant_type
+        unique (variant_type)
+)
+    comment '媒体标准化工作流配置';

@@ -238,6 +238,16 @@
         </div>
         
         <div class="info-actions">
+          <div
+            v-if="canSaveToLibrary"
+            class="action-button save-library-button"
+            :class="{ 'loading': savingToLibrary }"
+            @click="handleSaveToLibrary"
+          >
+            <el-icon v-if="!savingToLibrary"><FolderAdd /></el-icon>
+            <el-icon v-else class="loading-icon"><Loading /></el-icon>
+            {{ t('mediaLibrary.saveToLibrary') }}
+          </div>
           <div 
             class="action-button download-button"
             :class="{ 'loading': downloading }"
@@ -275,11 +285,12 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {  ElMessageBox, ElNotification } from 'element-plus'
-import { Picture, Download, Delete, VideoPlay, VideoPause, Warning, Loading } from '@element-plus/icons-vue'
+import { Picture, Download, Delete, VideoPlay, VideoPause, Warning, Loading, FolderAdd } from '@element-plus/icons-vue'
 import { WorkflowResultModelApi } from '@/api/workflow-result/workflow-result'
+import { mediaApi } from '@/api/media/media'
 import { WorkflowResultModelTypeEnum, WorkflowFormTypeEnum } from '@/enums/workflow'
 import Model3DPreview from '@/views/works/components/Model3DPreview.vue'
 
@@ -307,6 +318,7 @@ const loading = ref(false)
 const workDetail = ref(null)
 const imageError = ref(false)
 const downloading = ref(false)
+const savingToLibrary = ref(false)
 const deleting = ref(false)
 
 // 音频播放器相关数据
@@ -582,6 +594,26 @@ const handleClose = () => {
   videoDuration.value = 0
   videoProgressValue.value = 0
   videoError.value = false
+  savingToLibrary.value = false
+}
+
+const canSaveToLibrary = computed(() => {
+  if (!workDetail.value) return false
+  return workDetail.value.type === WorkflowResultModelTypeEnum.IMAGE
+    || workDetail.value.type === WorkflowResultModelTypeEnum.VIDEO
+})
+
+const handleSaveToLibrary = async () => {
+  if (!workDetail.value?.workflowResultId) return
+  savingToLibrary.value = true
+  try {
+    await mediaApi.importFromWork(workDetail.value.workflowResultId, workDetail.value.workflowName)
+    ElNotification.success({ message: t('mediaLibrary.saveToLibrarySuccess') })
+  } catch {
+    ElNotification.error({ message: t('mediaLibrary.saveToLibraryFailed') })
+  } finally {
+    savingToLibrary.value = false
+  }
 }
 
 // 下载功能
@@ -1194,6 +1226,16 @@ defineExpose({
   border-color: var(--el-color-primary-dark-2);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.save-library-button {
+  background: transparent;
+  color: var(--el-color-success);
+  border-color: var(--el-color-success);
+}
+
+.save-library-button:hover:not(.loading) {
+  background: var(--el-color-success-light-9);
 }
 
 .delete-button {

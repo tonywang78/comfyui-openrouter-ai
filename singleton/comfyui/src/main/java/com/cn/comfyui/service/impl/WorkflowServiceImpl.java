@@ -269,7 +269,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     @Override
     public String submitTask(final SubmitTaskDto dto) {
-        return processTaskSubmission(dto.getWorkflowId(), dto.getNodeContainer(), null);
+        return processTaskSubmission(dto.getWorkflowId(), dto.getNodeContainer(), null, null, dto.getMediaVariantId());
     }
 
     @Override
@@ -326,7 +326,7 @@ public class WorkflowServiceImpl implements WorkflowService {
             throw new ComfyuiException(e.getMessage());
         }
 
-        return processTaskSubmission(form.getWorkflowId(), containers, taskId, originalCredits);
+        return processTaskSubmission(form.getWorkflowId(), containers, taskId, originalCredits, null);
     }
 
     /**
@@ -339,7 +339,7 @@ public class WorkflowServiceImpl implements WorkflowService {
      */
     private String processTaskSubmission(final Long workflowId, List<TaskNodeContainer> containers,
             String existingTaskId) {
-        return processTaskSubmission(workflowId, containers, existingTaskId, null);
+        return processTaskSubmission(workflowId, containers, existingTaskId, null, null);
     }
 
     /**
@@ -353,6 +353,14 @@ public class WorkflowServiceImpl implements WorkflowService {
      */
     private String processTaskSubmission(final Long workflowId, List<TaskNodeContainer> containers,
             String existingTaskId, Long presetCredits) {
+        return processTaskSubmission(workflowId, containers, existingTaskId, presetCredits, null);
+    }
+
+    /**
+     * 处理任务提交的通用逻辑（支持媒体库 variant 回调标记）
+     */
+    private String processTaskSubmission(final Long workflowId, List<TaskNodeContainer> containers,
+            String existingTaskId, Long presetCredits, Long mediaVariantId) {
         RLock globalLock = redissonClient.getLock(ComfyuiConstant.COMFYUI_GLOBAL_SUBMIT_LOCK);
 
         try {
@@ -460,7 +468,8 @@ public class WorkflowServiceImpl implements WorkflowService {
                                 .setLocation(queueSize)
                                 .setCreateTime(createTime)
                                 .setStatus(TaskStatusEnum.WAIT.getDec())
-                                .setCreditsDeducted(creditsRequired);
+                                .setCreditsDeducted(creditsRequired)
+                                .setMediaVariantId(mediaVariantId);
 
                         // 保存任务详情到Hash
                         redisUtils.hashPut(COMFYUI_TASK_LIST + currentLoginId, taskId, newTask);
