@@ -9,7 +9,7 @@ package com.cn.common.enums;
  *
  * <h3>字段分类</h3>
  * <ul>
- *   <li><b>文本输入类</b>：text, multi_line_prompt, resolution</li>
+ *   <li><b>文本输入类</b>：text, multi_line_prompt, resolution, prompt, value</li>
  *   <li><b>文件上传类</b>：image, video, audio</li>
  * </ul>
  *
@@ -51,6 +51,16 @@ public enum ComfyuiInputFieldEnum {
      * <p>常见于：图像尺寸选择、分辨率配置等</p>
      */
     RESOLUTION("resolution"),
+
+    /**
+     * 提示词字段（Qwen/CLIP 等编码节点）
+     */
+    PROMPT("prompt"),
+
+    /**
+     * PrimitiveString 系列节点的字符串值字段
+     */
+    VALUE("value"),
     
     // ==================== 文件上传类字段 ====================
     
@@ -119,7 +129,8 @@ public enum ComfyuiInputFieldEnum {
      * @return 如果是文本类字段返回 true，否则返回 false
      */
     public boolean isTextInput() {
-        return this == TEXT || this == MULTI_LINE_PROMPT || this == RESOLUTION;
+        return this == TEXT || this == MULTI_LINE_PROMPT || this == RESOLUTION
+                || this == PROMPT || this == VALUE;
     }
     
     /**

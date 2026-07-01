@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -151,7 +152,8 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
             String title = extractNodeTitle(nodeObject);
 
             // 识别节点类型并添加到结果列表
-            identifyAndAddNode(nodeKey, inputs, title, resultList);
+            String classType = nodeObject.getString("class_type");
+            identifyAndAddNode(nodeKey, inputs, classType, title, resultList);
         }
 
         return resultList;
@@ -179,32 +181,50 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
      * @param title 节点标题
      * @param resultList 结果列表
      */
-    private void identifyAndAddNode(String nodeKey, JSONObject inputs, String title,
+    private static final Set<String> PRIMITIVE_STRING_CLASS_TYPES = Set.of(
+            "PrimitiveStringMultiline",
+            "PrimitiveString"
+    );
+
+    private void identifyAndAddNode(String nodeKey, JSONObject inputs, String classType, String title,
                                      List<ParsingWorkflowVo.FormNode> resultList) {
-        
+
         // 按优先级检查不同类型的输入字段
         // 注意：需要排除数组类型的字段，因为数组通常是节点连接引用
-        
+
         // 1. 检查文本输入（需管理员配置具体类型）
-        if ((inputs.containsKey(ComfyuiInputFieldEnum.TEXT.getFieldName()) && isArrayValue(inputs.get(ComfyuiInputFieldEnum.TEXT.getFieldName())))
-                ||(inputs.containsKey(ComfyuiInputFieldEnum.MULTI_LINE_PROMPT.getFieldName()) && isArrayValue(inputs.get(ComfyuiInputFieldEnum.MULTI_LINE_PROMPT.getFieldName())))
-                ||(inputs.containsKey(ComfyuiInputFieldEnum.RESOLUTION.getFieldName()) && isArrayValue(inputs.get(ComfyuiInputFieldEnum.RESOLUTION.getFieldName())))) {
-            resultList.add(createConfigurableTextNode(nodeKey, ComfyuiInputFieldEnum.TEXT.getFieldName(), title));
+        for (ComfyuiInputFieldEnum textField : List.of(
+                ComfyuiInputFieldEnum.TEXT,
+                ComfyuiInputFieldEnum.MULTI_LINE_PROMPT,
+                ComfyuiInputFieldEnum.RESOLUTION,
+                ComfyuiInputFieldEnum.PROMPT)) {
+            tryAddLiteralTextField(nodeKey, inputs, textField, title, resultList);
+        }
+        if (PRIMITIVE_STRING_CLASS_TYPES.contains(classType)) {
+            tryAddLiteralTextField(nodeKey, inputs, ComfyuiInputFieldEnum.VALUE, title, resultList);
         }
         
         // 2. 检查图片输入（需管理员配置具体类型）
-        if (inputs.containsKey(ComfyuiInputFieldEnum.IMAGE.getFieldName()) && isArrayValue(inputs.get(ComfyuiInputFieldEnum.IMAGE.getFieldName()))) {
+        if (inputs.containsKey(ComfyuiInputFieldEnum.IMAGE.getFieldName()) && isLiteralInputValue(inputs.get(ComfyuiInputFieldEnum.IMAGE.getFieldName()))) {
             resultList.add(createConfigurableImageNode(nodeKey, ComfyuiInputFieldEnum.IMAGE.getFieldName(), title));
         }
         
         // 3. 检查视频上传
-        if (inputs.containsKey(ComfyuiInputFieldEnum.VIDEO.getFieldName()) && isArrayValue(inputs.get(ComfyuiInputFieldEnum.VIDEO.getFieldName()))) {
+        if (inputs.containsKey(ComfyuiInputFieldEnum.VIDEO.getFieldName()) && isLiteralInputValue(inputs.get(ComfyuiInputFieldEnum.VIDEO.getFieldName()))) {
             resultList.add(createNode(nodeKey, ComfyuiFormTypeEnum.VIDEO_UPLOAD.getDec(), ComfyuiInputFieldEnum.VIDEO.getFieldName(), title));
         }
         
         // 4. 检查音频上传
-        if (inputs.containsKey(ComfyuiInputFieldEnum.AUDIO.getFieldName()) && isArrayValue(inputs.get(ComfyuiInputFieldEnum.AUDIO.getFieldName()))) {
+        if (inputs.containsKey(ComfyuiInputFieldEnum.AUDIO.getFieldName()) && isLiteralInputValue(inputs.get(ComfyuiInputFieldEnum.AUDIO.getFieldName()))) {
             resultList.add(createNode(nodeKey, ComfyuiFormTypeEnum.AUDIO_UPLOAD.getDec(), ComfyuiInputFieldEnum.AUDIO.getFieldName(), title));
+        }
+    }
+
+    private void tryAddLiteralTextField(String nodeKey, JSONObject inputs, ComfyuiInputFieldEnum field,
+                                        String title, List<ParsingWorkflowVo.FormNode> resultList) {
+        String fieldName = field.getFieldName();
+        if (inputs.containsKey(fieldName) && isLiteralInputValue(inputs.get(fieldName))) {
+            resultList.add(createConfigurableTextNode(nodeKey, fieldName, title));
         }
     }
 
@@ -278,7 +298,11 @@ public class SystemWorkflowServiceImpl implements SystemWorkflowService {
      * @param value 要检查的值
      * @return 如果是数组类型返回 true，否则返回 false
      */
-    private boolean isArrayValue(Object value) {
+    /**
+     * 判断值是否为字面量（非节点连线引用）
+     * ComfyUI 中数组格式如 ["节点ID", 输出索引] 表示引用其他节点输出
+     */
+    private boolean isLiteralInputValue(Object value) {
         return !(value instanceof List);
     }
 

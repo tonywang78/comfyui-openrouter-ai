@@ -32,6 +32,8 @@ export enum WorkflowResultModelDigitalEnum {
     TEXT = "text",
     MULTI_LINE_PROMPT = "multi_line_prompt",
     RESOLUTION = "resolution",
+    PROMPT = "prompt",
+    VALUE = "value",
     IMAGE = "image",
     VIDEO = "video",
     AUDIO = "audio"

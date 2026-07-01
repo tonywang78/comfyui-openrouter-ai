@@ -18,7 +18,7 @@ export interface ParsingWorkflowVo {
     nodeKey: string
     type: FormType
     availableTypes: ('TEXT_PROMPT' | 'RADIO_SELECTOR' | 'CHECKBOX_SELECTOR')[] | null
-    nodeDigital: 'text' | 'multi_line_prompt' | 'resolution' | 'image' | 'video' | 'audio'
+    nodeDigital: 'text' | 'multi_line_prompt' | 'resolution' | 'prompt' | 'value' | 'image' | 'video' | 'audio'
     tips: string | null
   }[]
 }

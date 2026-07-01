@@ -7,16 +7,16 @@
       <el-tab-pane :label="t('system.tabs.users')" name="users">
         <UserManagementView />
       </el-tab-pane>
-      <el-tab-pane :label="t('system.tabs.workflow')" name="workflow">
+      <el-tab-pane :label="t('system.tabs.workflow')" name="workflow" lazy>
         <WorkflowManagementView />
       </el-tab-pane>
-      <el-tab-pane :label="t('system.tabs.redemption')" name="redemption">
+      <el-tab-pane :label="t('system.tabs.redemption')" name="redemption" lazy>
         <RedemptionCodeView />
       </el-tab-pane>
-      <el-tab-pane :label="t('system.tabs.announcement')" name="announcement">
+      <el-tab-pane :label="t('system.tabs.announcement')" name="announcement" lazy>
         <AnnouncementView />
       </el-tab-pane>
-      <el-tab-pane :label="t('system.tabs.apiKeys')" name="apiKeys">
+      <el-tab-pane :label="t('system.tabs.apiKeys')" name="apiKeys" lazy>
         <ApiKeyManagementView />
       </el-tab-pane>
     </el-tabs>

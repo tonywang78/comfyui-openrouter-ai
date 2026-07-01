@@ -92,7 +92,7 @@
       </div>
     </el-card>
     <!-- 新建工作流对话框 -->
-    <el-dialog v-model="createDialogVisible" :title="dialogMode === 'edit' ? t('system.workflow.dialog.editTitle') : t('system.workflow.dialog.createTitle')" width="880px" class="workflow-dialog" @close="resetAll">
+    <el-dialog v-model="createDialogVisible" :title="dialogMode === 'edit' ? t('system.workflow.dialog.editTitle') : t('system.workflow.dialog.createTitle')" width="960px" class="workflow-dialog" @close="resetAll">
       <div class="dialog-content">
         <!-- 基本信息 -->
         <el-card shadow="never" class="section-card">
@@ -104,9 +104,33 @@
               <el-form-item :label="t('system.workflow.dialog.name')" prop="name">
                 <el-input v-model="baseForm.name" :placeholder="t('system.workflow.dialog.namePlaceholder')" />
               </el-form-item>
+              <div class="base-form-grid">
+                <el-form-item :label="t('system.workflow.dialog.category')" prop="workflowCategoryId">
+                  <el-select
+                    v-model="baseForm.workflowCategoryId"
+                    :placeholder="t('system.workflow.dialog.categoryPlaceholder')"
+                    style="width: 100%"
+                  >
+                    <el-option v-for="c in categoryList" :key="c.categoryId" :label="c.name" :value="c.categoryId" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item :label="t('system.workflow.dialog.credits')" prop="creditsDeducted">
+                  <el-input-number v-model="baseForm.creditsDeducted" :min="0" :max="100000" style="width: 100%" />
+                </el-form-item>
+                <el-form-item :label="t('system.workflow.dialog.requiredLevel')">
+                  <el-select v-model="baseForm.requiredLevel" style="width: 100%">
+                    <el-option :label="t('system.workflow.levels.user')" :value="Role.USER" />
+                    <el-option :label="t('system.workflow.levels.vip')" :value="Role.VIP" />
+                    <el-option :label="t('system.workflow.levels.admin')" :value="Role.ADMIN" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item :label="t('system.workflow.dialog.published')">
+                  <el-switch v-model="baseForm.published" />
+                </el-form-item>
+              </div>
               <el-form-item :label="t('system.workflow.dialog.cover')">
                 <div class="cover-field">
-                  <div class="cover-row">
+                  <div class="cover-field__main">
                     <el-input v-model="baseForm.url" :placeholder="t('system.workflow.dialog.coverPlaceholder')" />
                     <el-upload
                       :show-file-list="false"
@@ -133,28 +157,6 @@
               <el-form-item :label="t('system.workflow.dialog.description')">
                 <el-input v-model="baseForm.description" type="textarea" :rows="2" :placeholder="t('system.workflow.dialog.descriptionPlaceholder')" />
               </el-form-item>
-              <el-form-item :label="t('system.workflow.dialog.category')" prop="workflowCategoryId">
-                <el-select
-                  v-model="baseForm.workflowCategoryId"
-                  :placeholder="t('system.workflow.dialog.categoryPlaceholder')"
-                  style="width: 260px"
-                >
-                  <el-option v-for="c in categoryList" :key="c.categoryId" :label="c.name" :value="c.categoryId" />
-                </el-select>
-              </el-form-item>
-              <el-form-item :label="t('system.workflow.dialog.credits')" prop="creditsDeducted">
-                <el-input-number v-model="baseForm.creditsDeducted" :min="0" :max="100000" />
-              </el-form-item>
-              <el-form-item :label="t('system.workflow.dialog.published')">
-                <el-switch v-model="baseForm.published" />
-              </el-form-item>
-              <el-form-item :label="t('system.workflow.dialog.requiredLevel')">
-                <el-select v-model="baseForm.requiredLevel" style="width: 260px">
-                  <el-option :label="t('system.workflow.levels.user')" :value="Role.USER" />
-                  <el-option :label="t('system.workflow.levels.vip')" :value="Role.VIP" />
-                  <el-option :label="t('system.workflow.levels.admin')" :value="Role.ADMIN" />
-                </el-select>
-              </el-form-item>
             </el-form>
           </div>
         </el-card>
@@ -179,34 +181,100 @@
         </el-card>
 
         <!-- 配置输入表单节点 -->
-        <el-card shadow="never" class="section-card" v-if="configFormNodes.length">
+        <el-card shadow="never" class="section-card" v-if="parseResult.formNodeList.length">
           <template #header>
-            <div class="section-header">{{ t('system.workflow.dialog.inputConfig') }}</div>
-          </template>
-          <div class="form-nodes">
-            <div class="form-node" v-for="(item, idx) in configFormNodes" :key="item.nodeKey + '-' + idx">
-              <div class="row-1">
-                <div class="label">{{ item.tips || t('system.workflow.dialog.unnamedNode') }} ({{ item.nodeKey }})</div>
-                <el-checkbox v-model="item.enabled">{{ t('system.workflow.dialog.enableForm') }}</el-checkbox>
-                <el-select v-model="item.type" style="width: 200px">
-                  <el-option v-for="type in getAvailableTypes(item)" :key="type" :label="t('system.workflow.formTypes.' + type)" :value="type" />
+            <div class="section-header-row">
+              <div class="section-header-main">
+                <span class="section-header">{{ t('system.workflow.dialog.inputConfig') }}</span>
+                <el-text type="info" size="small">{{ t('system.workflow.dialog.inputConfigHint') }}</el-text>
+              </div>
+              <div class="section-header-actions">
+                <el-tag type="info" size="small">{{ t('system.workflow.dialog.configuredInputs', { count: configFormNodes.length }) }}</el-tag>
+                <el-tag v-if="availableFormFieldOptions.length" type="success" size="small">{{ t('system.workflow.dialog.availableInputs', { count: availableFormFieldOptions.length }) }}</el-tag>
+                <el-select
+                  v-model="pendingInputFieldKey"
+                  :placeholder="t('system.workflow.dialog.selectInputFieldToAdd')"
+                  class="input-field-picker"
+                  clearable
+                  :disabled="!availableFormFieldOptions.length"
+                >
+                  <el-option
+                    v-for="opt in availableFormFieldOptions"
+                    :key="opt.fieldKey"
+                    :label="opt.label"
+                    :value="opt.fieldKey"
+                  />
                 </el-select>
-                <el-switch v-model="item.required" :disabled="!item.enabled || item.hidden" :active-text="t('system.workflow.dialog.required')" :inactive-text="t('system.workflow.dialog.optional')" />
-                <el-switch v-model="item.hidden" :disabled="!item.enabled" :active-text="t('system.workflow.dialog.hidden')" :inactive-text="t('system.workflow.dialog.visible')" />
+                <el-button
+                  type="primary"
+                  link
+                  :disabled="!pendingInputFieldKey"
+                  @click="confirmAddFormConfig"
+                >
+                  {{ t('system.workflow.dialog.addInput') }}
+                </el-button>
               </div>
-              <div class="row-2">
-                <el-input v-model="item.tips" :disabled="!item.enabled" :placeholder="t('system.workflow.dialog.formLabel')" />
-                <el-input
-                  v-model="item.template"
-                  :disabled="!item.enabled"
-                  :placeholder="item.hidden ? t('system.workflow.dialog.hiddenTemplateRequired') : t('system.workflow.dialog.defaultTemplate')"
-                />
-                <el-input-number v-model="item.size" :disabled="!item.enabled" :min="0" :max="100000" :controls="false" :placeholder="t('system.workflow.dialog.sizeLength')" />
+            </div>
+          </template>
+          <el-empty
+            v-if="!configFormNodes.length"
+            :description="availableFormFieldOptions.length ? t('system.workflow.dialog.inputConfigEmpty') : t('system.workflow.dialog.noAvailableInputFields')"
+            :image-size="72"
+          />
+          <div v-else class="form-nodes">
+            <div class="form-node" v-for="(item, idx) in configFormNodes" :key="item.fieldKey">
+              <div class="form-node__toolbar">
+                <el-select
+                  v-model="item.fieldKey"
+                  :placeholder="t('system.workflow.dialog.selectInputField')"
+                  class="form-node__field-select"
+                  @change="onFormFieldChange(item)"
+                >
+                  <el-option
+                    v-for="opt in getFormFieldOptions(item)"
+                    :key="opt.fieldKey"
+                    :label="opt.label"
+                    :value="opt.fieldKey"
+                  />
+                </el-select>
+                <el-tag type="info" size="small">{{ item.inputs }}</el-tag>
+                <el-button link type="danger" @click="removeFormConfig(idx)">{{ t('system.workflow.dialog.removeInput') }}</el-button>
               </div>
-              <div class="row-3" v-if="(item.type === WorkflowFormTypeEnum.RADIO_SELECTOR || item.type === WorkflowFormTypeEnum.CHECKBOX_SELECTOR) && item.enabled">
+
+              <div class="form-node__grid">
+                <div class="form-node__control">
+                  <span class="form-node__label">{{ t('system.workflow.dialog.enableForm') }}</span>
+                  <el-select v-model="item.type" style="width: 100%">
+                    <el-option v-for="type in getAvailableTypes(item)" :key="type" :label="t('system.workflow.formTypes.' + type)" :value="type" />
+                  </el-select>
+                </div>
+                <div class="form-node__control">
+                  <span class="form-node__label">{{ t('system.workflow.dialog.required') }} / {{ t('system.workflow.dialog.hidden') }}</span>
+                  <div class="form-node__switches">
+                    <el-switch v-model="item.required" :disabled="item.hidden" :active-text="t('system.workflow.dialog.required')" :inactive-text="t('system.workflow.dialog.optional')" />
+                    <el-switch v-model="item.hidden" :active-text="t('system.workflow.dialog.hidden')" :inactive-text="t('system.workflow.dialog.visible')" />
+                  </div>
+                </div>
+                <div class="form-node__control span-2">
+                  <span class="form-node__label">{{ t('system.workflow.dialog.formLabel') }}</span>
+                  <el-input v-model="item.tips" :placeholder="t('system.workflow.dialog.formLabel')" />
+                </div>
+                <div class="form-node__control">
+                  <span class="form-node__label">{{ item.hidden ? t('system.workflow.dialog.hiddenTemplateRequired') : t('system.workflow.dialog.defaultTemplate') }}</span>
+                  <el-input v-model="item.template" :placeholder="item.hidden ? t('system.workflow.dialog.hiddenTemplateRequired') : t('system.workflow.dialog.defaultTemplate')" />
+                </div>
+                <div class="form-node__control">
+                  <span class="form-node__label">{{ t('system.workflow.dialog.sizeLength') }}</span>
+                  <el-input-number v-model="item.size" :min="0" :max="100000" :controls="false" style="width: 100%" :placeholder="t('system.workflow.dialog.sizeLength')" />
+                </div>
+              </div>
+
+              <div class="form-node__extra" v-if="(item.type === WorkflowFormTypeEnum.RADIO_SELECTOR || item.type === WorkflowFormTypeEnum.CHECKBOX_SELECTOR)">
+                <span class="form-node__label">{{ t('system.workflow.dialog.options') }}</span>
                 <el-input type="textarea" v-model="item.options" :rows="3" :placeholder="t('system.workflow.dialog.optionsPlaceholder')" />
               </div>
-              <div class="row-prompt-assist" v-if="item.type === WorkflowFormTypeEnum.TEXT_PROMPT && item.enabled">
+
+              <div class="form-node__extra form-node__prompt-assist" v-if="item.type === WorkflowFormTypeEnum.TEXT_PROMPT">
                 <el-select
                   v-model="item.promptStyle"
                   style="width: 220px"
@@ -237,23 +305,30 @@
                   />
                 </el-select>
               </div>
-              <div class="row-4">{{ t('system.workflow.dialog.inputField') }}：<el-tag type="info">{{ item.inputs }}</el-tag></div>
             </div>
           </div>
         </el-card>
 
         <!-- 配置输出节点 -->
-        <el-card shadow="never" class="section-card" v-if="parseResult.allNodeList.length">
+        <el-card shadow="never" class="section-card" v-if="parseResult.json">
           <template #header>
-            <div class="section-header">{{ t('system.workflow.dialog.outputConfig') }}</div>
+            <div class="section-header-row">
+              <div class="section-header-main">
+                <span class="section-header">{{ t('system.workflow.dialog.outputConfig') }}</span>
+                <el-text type="info" size="small">{{ t('system.workflow.dialog.outputConfigHint') }}</el-text>
+              </div>
+              <el-button v-if="outputNodes.length < 1" type="primary" link @click="addOutputConfig">{{ t('system.workflow.dialog.addOutput') }}</el-button>
+            </div>
           </template>
-          <div class="output-config">
-            <el-button v-if="outputNodes.length < 1" type="primary" link @click="addOutputConfig">{{ t('system.workflow.dialog.addOutput') }}</el-button>
+          <el-empty v-if="!outputNodes.length" :description="t('system.workflow.dialog.outputConfigEmpty')" :image-size="72">
+            <el-button type="primary" @click="addOutputConfig">{{ t('system.workflow.dialog.addOutput') }}</el-button>
+          </el-empty>
+          <div v-else class="output-config">
             <div class="output-row" v-for="(o, i) in outputNodes" :key="i">
-              <el-select v-model="o.nodeKey" :placeholder="t('system.workflow.dialog.selectNode')" style="width: 320px">
+              <el-select v-model="o.nodeKey" :placeholder="t('system.workflow.dialog.selectNode')" class="output-row__node">
                 <el-option v-for="n in parseResult.allNodeList" :key="n.nodeKey" :label="formatNodeLabel(n)" :value="n.nodeKey" />
               </el-select>
-              <el-select v-model="o.type" :placeholder="t('system.workflow.dialog.selectType')" style="width: 160px">
+              <el-select v-model="o.type" :placeholder="t('system.workflow.dialog.selectType')" class="output-row__type">
                 <el-option v-for="(label, value) in outputTypeLabelMap" :key="value" :label="label" :value="value" />
               </el-select>
               <el-button link type="danger" @click="removeOutputConfig(i)">{{ t('system.workflow.dialog.removeOutput') }}</el-button>
@@ -304,7 +379,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { Plus, Search, RefreshRight } from '@element-plus/icons-vue';
 import { ElNotification, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -370,6 +445,7 @@ const parseResult = reactive<ParsingWorkflowVo>({
 })
 
 type ConfigFormNode = {
+  fieldKey: string
   nodeKey: string
   type: WorkflowFormTypeEnum
   inputs: WorkflowResultModelDigitalEnum
@@ -378,14 +454,49 @@ type ConfigFormNode = {
   template?: string
   required: boolean
   size?: number
-  enabled: boolean
   hidden: boolean
   promptStyle: PromptStyleEnum | string
   promptImageRefs: string[]
 }
 
+type ParsedFormNode = ParsingWorkflowVo['formNodeList'][number]
+
+const formFieldKey = (nodeKey: string, inputs: string) => `${nodeKey}_${inputs}`
+
 const configFormNodes = ref<ConfigFormNode[]>([])
+const pendingInputFieldKey = ref('')
 const outputNodes = ref<OutputNodeConfig[]>([])
+
+const formatFormFieldLabel = (n: ParsedFormNode) => {
+  return `${n.tips || t('system.workflow.dialog.unnamedNode')} (${n.nodeKey}) · ${n.nodeDigital}`
+}
+
+const buildFormFieldOptionPool = () =>
+  parseResult.formNodeList.map(n => ({
+    fieldKey: formFieldKey(n.nodeKey, n.nodeDigital),
+    label: formatFormFieldLabel(n),
+    parseNode: n
+  }))
+
+const availableFormFieldOptions = computed(() => {
+  const used = new Set(configFormNodes.value.map(n => n.fieldKey))
+  return buildFormFieldOptionPool().filter(opt => !used.has(opt.fieldKey))
+})
+
+watch(availableFormFieldOptions, opts => {
+  if (pendingInputFieldKey.value && !opts.some(o => o.fieldKey === pendingInputFieldKey.value)) {
+    pendingInputFieldKey.value = ''
+  }
+})
+
+const getFormFieldOptions = (current: ConfigFormNode) => {
+  const used = new Set(
+    configFormNodes.value
+      .filter(n => n.fieldKey !== current.fieldKey)
+      .map(n => n.fieldKey)
+  )
+  return buildFormFieldOptionPool().filter(opt => !used.has(opt.fieldKey))
+}
 
 const outputTypeLabelMap = computed(() => ({
   [WorkflowResultModelTypeEnum.IMAGE]: t('system.workflow.outputTypes.image'),
@@ -471,12 +582,11 @@ const parsePromptImageRefs = (raw?: string | null): string[] => {
 const getImageFieldOptions = (current: ConfigFormNode) => {
   return configFormNodes.value
     .filter(n =>
-      n.enabled
-      && (n.type === WorkflowFormTypeEnum.IMAGE_UPLOAD || n.type === WorkflowFormTypeEnum.IMAGE_SCRIBBLE)
-      && `${n.nodeKey}_${n.inputs}` !== `${current.nodeKey}_${current.inputs}`
+      (n.type === WorkflowFormTypeEnum.IMAGE_UPLOAD || n.type === WorkflowFormTypeEnum.IMAGE_SCRIBBLE)
+      && n.fieldKey !== current.fieldKey
     )
     .map(n => ({
-      value: `${n.nodeKey}_${n.inputs}`,
+      value: n.fieldKey,
       label: `${n.tips || t('system.workflow.dialog.unnamedNode')} (${n.nodeKey})`
     }))
 }
@@ -487,33 +597,34 @@ const onPromptStyleChange = (item: ConfigFormNode) => {
   }
 }
 
-const mapParseNodeToDefaultConfig = (
-  n: ParsingWorkflowVo['formNodeList'][number],
-  enabled = true
-): ConfigFormNode => ({
-  nodeKey: n.nodeKey,
-  type: n.type === WorkflowFormTypeEnum.TEXT_CONFIGURABLE
-    ? WorkflowFormTypeEnum.TEXT_PROMPT
-    : n.type === WorkflowFormTypeEnum.IMAGE_CONFIGURABLE
-    ? WorkflowFormTypeEnum.IMAGE_UPLOAD
-    : (n.type as WorkflowFormTypeEnum),
-  inputs: n.nodeDigital as WorkflowResultModelDigitalEnum,
-  tips: n.tips || '',
-  required: true,
-  size: n.type === WorkflowFormTypeEnum.IMAGE_UPLOAD
-    || n.type === WorkflowFormTypeEnum.IMAGE_CONFIGURABLE
-    || n.type === WorkflowFormTypeEnum.IMAGE_SCRIBBLE
-    || n.type === WorkflowFormTypeEnum.VIDEO_UPLOAD
-    || n.type === WorkflowFormTypeEnum.AUDIO_UPLOAD ? 10 : 500,
-  template: '',
-  options: n.type === WorkflowFormTypeEnum.TEXT_CONFIGURABLE ? '' : undefined,
-  enabled,
-  hidden: false,
-  promptStyle: PromptStyleEnum.NONE,
-  promptImageRefs: []
-})
+const mapParseNodeToDefaultConfig = (n: ParsedFormNode): ConfigFormNode => {
+  const inputs = n.nodeDigital as WorkflowResultModelDigitalEnum
+  return {
+    fieldKey: formFieldKey(n.nodeKey, inputs),
+    nodeKey: n.nodeKey,
+    type: n.type === WorkflowFormTypeEnum.TEXT_CONFIGURABLE
+      ? WorkflowFormTypeEnum.TEXT_PROMPT
+      : n.type === WorkflowFormTypeEnum.IMAGE_CONFIGURABLE
+      ? WorkflowFormTypeEnum.IMAGE_UPLOAD
+      : (n.type as WorkflowFormTypeEnum),
+    inputs,
+    tips: n.tips || '',
+    required: true,
+    size: n.type === WorkflowFormTypeEnum.IMAGE_UPLOAD
+      || n.type === WorkflowFormTypeEnum.IMAGE_CONFIGURABLE
+      || n.type === WorkflowFormTypeEnum.IMAGE_SCRIBBLE
+      || n.type === WorkflowFormTypeEnum.VIDEO_UPLOAD
+      || n.type === WorkflowFormTypeEnum.AUDIO_UPLOAD ? 10 : 500,
+    template: '',
+    options: n.type === WorkflowFormTypeEnum.TEXT_CONFIGURABLE ? '' : undefined,
+    hidden: false,
+    promptStyle: PromptStyleEnum.NONE,
+    promptImageRefs: []
+  }
+}
 
 const mapSavedNodeToConfig = (saved: SavedFormNode): ConfigFormNode => ({
+  fieldKey: formFieldKey(saved.nodeKey, saved.inputs),
   nodeKey: saved.nodeKey,
   type: saved.type as WorkflowFormTypeEnum,
   inputs: saved.inputs as WorkflowResultModelDigitalEnum,
@@ -522,30 +633,81 @@ const mapSavedNodeToConfig = (saved: SavedFormNode): ConfigFormNode => ({
   template: saved.template || '',
   required: saved.required === 1,
   size: saved.size,
-  enabled: true,
   hidden: saved.hidden === 1,
   promptStyle: saved.promptStyle || PromptStyleEnum.NONE,
   promptImageRefs: parsePromptImageRefs(saved.promptImageRefs)
 })
 
-const applyParsedWorkflow = (data: ParsingWorkflowVo, savedMap?: Map<string, SavedFormNode>) => {
+const applyParsedWorkflow = (data: ParsingWorkflowVo, savedList?: SavedFormNode[]) => {
   parseResult.json = data.json
   parseResult.allNodeList = data.allNodeList
   parseResult.formNodeList = data.formNodeList
 
-  const parsedKeys = new Set(data.formNodeList.map(n => n.nodeKey))
-  configFormNodes.value = data.formNodeList.map(n => {
-    const saved = savedMap?.get(n.nodeKey)
-    return saved ? mapSavedNodeToConfig(saved) : mapParseNodeToDefaultConfig(n, false)
-  })
+  const parseMap = new Map(data.formNodeList.map(n => [formFieldKey(n.nodeKey, n.nodeDigital), n]))
 
-  if (savedMap) {
-    for (const saved of savedMap.values()) {
-      if (!parsedKeys.has(saved.nodeKey)) {
-        configFormNodes.value.push(mapSavedNodeToConfig(saved))
+  if (savedList?.length) {
+    configFormNodes.value = savedList.map(saved => {
+      const parsed = parseMap.get(formFieldKey(saved.nodeKey, saved.inputs))
+      if (!parsed) {
+        return mapSavedNodeToConfig(saved)
       }
-    }
+      const merged = mapParseNodeToDefaultConfig(parsed)
+      const savedConfig = mapSavedNodeToConfig(saved)
+      return { ...merged, ...savedConfig, fieldKey: savedConfig.fieldKey }
+    })
+    return
   }
+
+  configFormNodes.value = configFormNodes.value
+    .filter(item => parseMap.has(item.fieldKey))
+    .map(item => {
+      const parsed = parseMap.get(item.fieldKey)!
+      const defaults = mapParseNodeToDefaultConfig(parsed)
+      return {
+        ...defaults,
+        tips: item.tips,
+        type: item.type,
+        template: item.template,
+        options: item.options,
+        required: item.required,
+        size: item.size,
+        hidden: item.hidden,
+        promptStyle: item.promptStyle,
+        promptImageRefs: item.promptImageRefs
+      }
+    })
+  ensureDefaultOutputConfig()
+}
+
+const guessDefaultOutputNodeKey = () => {
+  const saveImage = parseResult.allNodeList.find(n => /save\s*image|保存图像/i.test(n.tips || ''))
+  return saveImage?.nodeKey || parseResult.allNodeList[0]?.nodeKey || ''
+}
+
+const ensureDefaultOutputConfig = () => {
+  if (!parseResult.json || outputNodes.value.length > 0) return
+  outputNodes.value.push({
+    nodeKey: guessDefaultOutputNodeKey(),
+    type: WorkflowResultModelTypeEnum.IMAGE
+  })
+}
+
+const onFormFieldChange = (item: ConfigFormNode) => {
+  const option = buildFormFieldOptionPool().find(opt => opt.fieldKey === item.fieldKey)
+  if (!option) return
+  const next = mapParseNodeToDefaultConfig(option.parseNode)
+  Object.assign(item, next)
+}
+
+const confirmAddFormConfig = () => {
+  const option = availableFormFieldOptions.value.find(opt => opt.fieldKey === pendingInputFieldKey.value)
+  if (!option) return
+  configFormNodes.value.push(mapParseNodeToDefaultConfig(option.parseNode))
+  pendingInputFieldKey.value = ''
+}
+
+const removeFormConfig = (idx: number) => {
+  configFormNodes.value.splice(idx, 1)
 }
 
 const openEditDialog = async (row: WorkflowListItem) => {
@@ -564,16 +726,16 @@ const openEditDialog = async (row: WorkflowListItem) => {
     baseForm.published = detail.published ?? false
     baseForm.requiredLevel = (detail.requiredLevel as Role) || Role.USER
 
-    const savedMap = new Map(detail.savedFormNodeList.map(item => [item.nodeKey, item]))
     applyParsedWorkflow(
       {
         json: detail.json,
         allNodeList: detail.allNodeList,
         formNodeList: detail.formNodeList
       },
-      savedMap
+      detail.savedFormNodeList
     )
     outputNodes.value = detail.outputNodeList.map(item => ({ ...item }))
+    ensureDefaultOutputConfig()
     createDialogVisible.value = true
   } catch (e) {
     console.error(e)
@@ -719,9 +881,17 @@ const onWorkflowFileChange = async (e: Event) => {
   }
 }
 
+const TEXT_INPUT_FIELDS = new Set<WorkflowResultModelDigitalEnum>([
+  WorkflowResultModelDigitalEnum.TEXT,
+  WorkflowResultModelDigitalEnum.MULTI_LINE_PROMPT,
+  WorkflowResultModelDigitalEnum.RESOLUTION,
+  WorkflowResultModelDigitalEnum.PROMPT,
+  WorkflowResultModelDigitalEnum.VALUE
+])
+
 const getAvailableTypes = (item: ConfigFormNode) => {
   // 文本类可切换三种
-  if (item.inputs === WorkflowResultModelDigitalEnum.TEXT || item.inputs === WorkflowResultModelDigitalEnum.MULTI_LINE_PROMPT || item.inputs === WorkflowResultModelDigitalEnum.RESOLUTION) {
+  if (TEXT_INPUT_FIELDS.has(item.inputs)) {
     return [WorkflowFormTypeEnum.TEXT_PROMPT, WorkflowFormTypeEnum.RADIO_SELECTOR, WorkflowFormTypeEnum.CHECKBOX_SELECTOR]
   }
   // 图片类可切换两种：IMAGE_UPLOAD / IMAGE_SCRIBBLE
@@ -746,8 +916,7 @@ const formatNodeLabel = (n: { nodeKey: string; tips: string | null }) => {
 }
 
 const canSubmit = computed(() => {
-  const enabledFormNodes = configFormNodes.value.filter(n => n.enabled)
-  return !!baseForm.name && !!parseResult.json && enabledFormNodes.length > 0 && outputNodes.value.length > 0 && outputNodes.value.every(o => o.nodeKey && o.type)
+  return !!baseForm.name && !!parseResult.json && configFormNodes.value.length > 0 && outputNodes.value.length > 0 && outputNodes.value.every(o => o.nodeKey && o.type)
 })
 
 const handleSave = async () => {
@@ -760,8 +929,7 @@ const handleSave = async () => {
   if (!canSubmit.value) return
   
   // 选择器需要校验 options
-  const enabledFormNodes = configFormNodes.value.filter(n => n.enabled)
-  for (const item of enabledFormNodes) {
+  for (const item of configFormNodes.value) {
     if (item.hidden && !item.template?.trim()) {
       ElNotification.error(t('system.workflow.validation.hiddenTemplateRequired', { node: item.nodeKey }))
       return
@@ -793,7 +961,7 @@ const handleSave = async () => {
     creditsDeducted: baseForm.creditsDeducted,
     published: baseForm.published,
     requiredLevel: baseForm.requiredLevel,
-    formNodeList: enabledFormNodes.map<FormNodeConfig>(i => ({
+    formNodeList: configFormNodes.value.map<FormNodeConfig>(i => ({
       nodeKey: i.nodeKey,
       type: i.type as WorkflowFormTypeEnum,
       inputs: i.inputs,
@@ -860,6 +1028,7 @@ const resetAll = () => {
   parseResult.allNodeList = []
   parseResult.formNodeList = []
   configFormNodes.value = []
+  pendingInputFieldKey.value = ''
   outputNodes.value = []
   createFormRef.value?.clearValidate()
 }
@@ -959,7 +1128,15 @@ const resetAll = () => {
   使用 :deep() 穿透 scoped 样式，确保对 teleport 到 body 的 el-dialog 生效 
 */
 :deep(.workflow-dialog .el-dialog),
-:deep(.workflow-edit-dialog .el-dialog),
+:deep(.workflow-edit-dialog .el-dialog) {
+  background-color: var(--el-bg-color-overlay);
+  color: var(--el-text-color-primary);
+  display: flex;
+  flex-direction: column;
+  max-height: 88vh;
+  margin: 6vh auto !important;
+}
+
 :deep(.workflow-category-dialog .el-dialog),
 :deep(.workflow-category-create-dialog .el-dialog) {
   background-color: var(--el-bg-color-overlay);
@@ -978,7 +1155,15 @@ const resetAll = () => {
 }
 
 :deep(.workflow-dialog .el-dialog__body),
-:deep(.workflow-edit-dialog .el-dialog__body),
+:deep(.workflow-edit-dialog .el-dialog__body) {
+  background-color: var(--el-bg-color-overlay);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
 :deep(.workflow-category-dialog .el-dialog__body),
 :deep(.workflow-category-create-dialog .el-dialog__body) {
   background-color: var(--el-bg-color-overlay);
@@ -1070,25 +1255,87 @@ const resetAll = () => {
 .dialog-content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .section-card {
   background-color: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color-lighter);
+  flex-shrink: 0;
+}
+
+.section-card :deep(.el-card__header) {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.section-card :deep(.el-card__body) {
+  padding: 16px;
 }
 
 .section-header {
   font-weight: 600;
 }
 
-.base-form .cover-field {
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.section-header-main {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 4px;
+}
+
+.section-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.input-field-picker {
+  width: min(360px, 100%);
+}
+
+.base-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 16px;
+}
+
+.base-form-grid :deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+.base-form :deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+@media (max-width: 720px) {
+  .base-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .base-form .cover-field {
+    flex-direction: column;
+  }
+}
+
+.base-form .cover-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
   width: 100%;
 }
 
-.base-form .cover-row {
+.base-form .cover-field__main {
+  flex: 1;
+  min-width: 0;
   display: flex;
   gap: 8px;
   align-items: center;
@@ -1137,10 +1384,77 @@ const resetAll = () => {
 .form-node {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border: 1px dashed var(--el-border-color);
-  border-radius: 6px;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  background: var(--el-fill-color-blank);
+}
+
+.form-node__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.form-node__field-select {
+  flex: 1;
+  min-width: 280px;
+}
+
+.form-node__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.form-node__grid .span-2 {
+  grid-column: span 2;
+}
+
+.form-node__control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.form-node__label {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  line-height: 1.4;
+}
+
+.form-node__switches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  align-items: center;
+  min-height: 32px;
+}
+
+.form-node__extra {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-node__prompt-assist {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .form-node__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-node__grid .span-2 {
+    grid-column: span 1;
+  }
 }
 
 /* 搜索栏控件暗色样式 */
@@ -1242,59 +1556,33 @@ const resetAll = () => {
   background-color: var(--el-fill-color-light);
 }
 
-.form-node .row-1,
-.form-node .row-2,
-.form-node .row-prompt-assist {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.form-node .row-prompt-assist {
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
-
-.form-node .row-1 :deep(.el-checkbox__label) {
-  color: var(--el-text-color-primary);
-}
-
-.form-node .row-1 :deep(.el-checkbox .el-checkbox__inner) {
-  background-color: var(--el-bg-color);
-  border-color: var(--el-border-color);
-}
-
-.form-node .row-1 :deep(.el-checkbox:hover .el-checkbox__inner) {
-  border-color: var(--el-border-color-hover);
-}
-
-.form-node .row-1 :deep(.el-checkbox.is-checked .el-checkbox__inner) {
-  background-color: var(--el-color-primary);
-  border-color: var(--el-color-primary);
-}
-
-.form-node .row-4 :deep(.el-tag) {
-  background-color: var(--el-fill-color-lighter);
-  border-color: var(--el-border-color);
-  color: var(--el-text-color-regular);
-}
-
-.form-node .row-2 > * {
-  flex: 1;
-}
-
 .output-config {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .output-row {
   display: flex;
   gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
+  padding: 12px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  background: var(--el-fill-color-blank);
 }
-.parse-summary{
+
+.output-row__node {
+  flex: 1;
+  min-width: 280px;
+}
+
+.output-row__type {
+  width: 160px;
+}
+
+.parse-summary {
   padding-top: 12px;
 }
 </style>
