@@ -7,6 +7,7 @@ import com.cn.comfyui.excepitons.ComfyuiException;
 import com.cn.comfyui.service.WorkflowService;
 import com.cn.common.msg.Result;
 import com.cn.common.annotations.RateLimit;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -80,6 +81,21 @@ public class TaskController {
         }
     }
 
+
+    /**
+     * 按任务 ID 获取当前用户任务进度详情（供 Agent/MCP 轮询）
+     *
+     * @param taskId 任务 ID
+     * @return 任务进度详情
+     */
+    @GetMapping(value = "/get/task/detail", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Result getTaskDetail(@RequestParam @NotBlank(message = "任务ID不能为空") final String taskId) {
+        try {
+            return Result.data(workflowService.getTaskProgress(taskId));
+        } catch (ComfyuiException ex) {
+            return Result.error(ex.getMessage());
+        }
+    }
 
     /**
      * 分页获取当前用户任务进度

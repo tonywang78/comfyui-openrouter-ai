@@ -243,8 +243,21 @@ npm run dev
 
 ### 接口与约定
 - 基础前缀：`/api`
-- 认证头：`Authorization: Bearer <token>`（Sa-Token）
+- 认证头：`Authorization: Bearer <token>`（Sa-Token），或 `X-Api-Key: ak_...`（API Key，供 Agent/MCP 使用）
 - 返回结构与状态码：遵循后端统一约定（见 `common` 模块与各 `controller`）。
+
+### Agent 集成（Hermes / OpenClaw / MCP）
+
+通过 API Key 将 ComfyUI 生成、生成助手、媒体库及**完整后台管理**（工作流、用户、API Key、兑换码、公告等）暴露给外部 Agent：
+
+👉 **[Agent Skill 与 MCP Server 文档](./integrations/conni-skill/README.md)**
+
+快速步骤：
+
+1. 管理员在 **系统管理 → API Key** 创建 `ak_...` 密钥
+2. 构建 MCP：`cd integrations/conni-skill/mcp-server && npm install && npm run build`
+3. 配置 `CONNI_API_KEY` 与 MCP server 路径（见 `integrations/conni-skill/mcp-server/README.md`）
+4. 将 `integrations/conni-skill/` 安装为 Agent Skill（`SKILL.md`）
 
 ### 安全与合规
 - 请勿在仓库中提交敏感凭据（数据库、邮箱、OSS、OpenRouter Key 等）。

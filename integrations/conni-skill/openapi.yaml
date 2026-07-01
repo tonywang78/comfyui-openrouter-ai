@@ -1,0 +1,194 @@
+openapi: 3.0.3
+info:
+  title: Conni-X-Pro Agent API
+  description: >
+    Subset of Conni-X-Pro REST API used by the MCP server and Agent Skill.
+    Authenticate with X-Api-Key header (ak_...).
+  version: 1.0.0
+servers:
+  - url: http://localhost:9898/api
+    description: Local default
+security:
+  - ApiKeyAuth: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+  schemas:
+    Result:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data: {}
+    TaskNodeContainer:
+      type: object
+      required: [nodeKey]
+      properties:
+        nodeKey:
+          type: string
+        inputs:
+          type: string
+        nodeValue:
+          type: string
+        isUpload:
+          type: boolean
+    SubmitTask:
+      type: object
+      required: [workflowId, nodeContainer]
+      properties:
+        workflowId:
+          type: integer
+        nodeContainer:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskNodeContainer'
+        mediaVariantId:
+          type: integer
+paths:
+  /client/health:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: OK
+  /user/get/credits:
+    get:
+      summary: User credit balance
+      responses:
+        '200':
+          description: OK
+  /comfyui/task/get/workflow/page:
+    get:
+      summary: List workflows
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: prompt
+          in: query
+          schema:
+            type: string
+        - name: categoryId
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /comfyui/task/get/workflow/interface:
+    get:
+      summary: Workflow form schema
+      parameters:
+        - name: workflowId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /comfyui/task/submit/task:
+    post:
+      summary: Submit ComfyUI task
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitTask'
+      responses:
+        '200':
+          description: Returns taskId in data
+  /comfyui/task/get/task/detail:
+    get:
+      summary: Task progress by ID
+      parameters:
+        - name: taskId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /comfyui/result/get/workflow-result/page:
+    get:
+      summary: List works
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /llm/generation/submit:
+    post:
+      summary: Generation assistant message
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId]
+              properties:
+                sessionId:
+                  type: string
+                text:
+                  type: string
+                imageUrls:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+  /llm/generation/confirm:
+    post:
+      summary: Confirm draft and submit task
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId, draftId]
+              properties:
+                sessionId:
+                  type: string
+                draftId:
+                  type: string
+      responses:
+        '200':
+          description: Returns taskId
+  /oss/upload/file:
+    post:
+      summary: Upload file to OSS
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Returns URL in data
+  /media/page:
+    get:
+      summary: Media library page
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
